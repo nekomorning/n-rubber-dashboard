@@ -343,7 +343,7 @@ function makeCard(ch,ticks,grid,row){
     '<div class="meta">'+
       '<span class="val">'+fmt(st.latest,ind.dec)+'<span class="unit"> '+ind.unit+'</span></span>'+
       '<span class="chg '+cls+'">'+arrow(st.chg)+' '+(st.chg>0?"+":"")+fmt(st.chg,ind.dec)+
-        '（'+(st.pct===null?"—":(st.pct>0?"+":"")+st.pct.toFixed(2)+"%")+' 日环比）</span>'+
+        '（'+(st.pct===null?"—":(st.pct>0?"+":"")+st.pct.toFixed(2)+"%")+'）</span>'+
       '<span class="dt">'+(st.latestDate||"")+'</span>'+
     '</div>';
   var div=document.createElement("div"); div.className="chart"; card.appendChild(div);
@@ -427,7 +427,7 @@ function exportOption(D, ch){
   var chgTxt="";
   if(st.chg!==null && st.chg!==undefined){
     chgTxt=arrow(st.chg)+" "+(st.chg>0?"+":"")+fmt(st.chg,ind.dec)
-      + " " + (st.pct===null ? "—" : (st.pct>0?"+":"") + st.pct.toFixed(2) + "%") + " 日环比）";
+      + " （" + (st.pct===null ? "—" : (st.pct>0?"+":"") + st.pct.toFixed(2) + "%") + "）";
   }
   var subColor = st.chg>0?"#d92626":(st.chg<0?"#0a9a5c":"#6b7686");
   return {
