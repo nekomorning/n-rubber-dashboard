@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天然胶数据看板 · 一页通</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#ffffff; --border:#e5e9f0; --text:#1f2733; --sub:#6b7686;
+  --up:#d92626; --down:#0a9a5c; --flat:#8a93a3; --accent:#0f4c81;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:var(--bg); color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif; font-size:14px;}
+.wrap{max-width:1080px; margin:0 auto; padding:18px 22px 60px;}
+
+.header{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
+.header h1{font-size:24px; color:var(--accent); letter-spacing:1px;}
+.header .date{color:var(--sub); font-size:13px;}
+.tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.tab{padding:7px 20px; border-radius:8px 8px 0 0; border:1px solid var(--border); border-bottom:none;
+  background:#e9edf3; color:var(--sub); cursor:default; font-size:14px; text-decoration:none;}
+.tab.active{background:var(--accent); color:#fff; font-weight:600;}
+.tab.disabled{opacity:.55;}
+
+.ypt-note{color:var(--sub); font-size:12px; margin:0 0 14px; line-height:1.7;}
+
+/* 文档正文：严格保留钉钉原格式（蓝色小标题 / 黄绿红高亮均在正文内联 span 中） */
+.ypt-doc{background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:24px 30px 30px; margin-bottom:18px; line-height:1.95; font-size:15px; color:var(--text);}
+.ypt-doc ul{list-style:disc; padding-left:24px; margin:8px 0;}
+.ypt-doc li{margin:5px 0;}
+.ypt-doc ul ul{list-style:circle; margin:4px 0;}
+.ypt-doc ul ul ul{list-style:square; margin:2px 0;}
+.ypt-doc > ul > li{margin:14px 0 6px;}
+.ypt-doc strong{font-weight:700;}
+
+.footer{margin-top:30px; color:var(--sub); font-size:12px; text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>天然胶数据看板</h1>
+    <div class="date">研究框架 · 一页通</div>
+  </div>
+  
+  <div class="tabs">
+    <a class="tab active" href="天然胶数据看板_一页通.html">一页通</a>
+    <a class="tab" href="天然胶数据看板_页面一_日度价格.html">日度价格</a>
+    <a class="tab" href="天然胶数据看板_页面二_库存.html">天胶库存</a>
+    <a class="tab" href="天然胶数据看板_页面三_轮胎.html">下游轮胎</a>
+    <span class="tab disabled">天胶物流</span>
+  </div>
+
+  <div class="ypt-note">内容同步自钉钉知识库《赵芸曦学习笔记 / 学习笔记 / 一页通 / 天然胶一页通》，文字与段落格式与原文档保持一致；钉钉更新后会同步到此页。</div>
+
+  <div class="ypt-doc">
+<ul>
+<li><span style="color: #4472C6;"><strong>一、主产区产量分析框架（量）</strong></span>
+<ul>
+<li><strong>原料环节（胶树种植业 → 胶水/杯胶）：</strong>
+<ul>
+<li><strong>产能：种面 × 单产</strong>，种面不再有增量，但出清困难；单产提升需要投资养护 → <span style="color: #6E30A4; background-color: #FFF3CE;"><strong>产能从趋势项变稳定</strong></span>，交易供应周期拐点为时尚早
+</li>
+<li><strong>开工率-客观：</strong><span style="color: #6E30A4; background-color: #FFF3CE;"><strong>天气</strong></span><span style="background-color: #FFF3CE;"><strong>→ ① 胶树生长 ② 割胶作业，显著</strong></span><span style="color: #6E30A4; background-color: #FFF3CE;"><strong>季节性（6 月上量）</strong></span>，天气是阶段性短期影响，难有全年持续性影响，路标：降雨量
+</li>
+<li><strong>开工率-主观：价格→</strong><span style="background-color: #FFF3CE;"><strong>胶农割胶积极性</strong></span><strong>→供应弹性大</strong>，路标：原料价格
+</li>
+</ul>
+</li>
+<li><strong>初加工环节（胶水/杯胶 → 橡胶）：</strong>
+<ul>
+<li><strong>产能：加工厂产能</strong><span style="background-color: #FFF3CE;"><strong>过剩+竞争</strong></span>→ 开割初期<strong>原料</strong>供不应求 → <span style="color: #6E30A4;"><strong>溢价</strong></span> → 上量后<span style="color: #6E30A4;"><strong>必然季节性回落</strong></span>（约10泰铢），时间同比有早晚
+</li>
+<li><strong>开工率：</strong>原料供应、加工利润、标混切换
+</li>
+</ul>
+</li>
+<li><strong>核心主体特征：全球体量 1450wt 上下，</strong><span style="background-color: #FFF3CE;"><strong>东南亚供减需增转深加工→轮胎出口；非洲供应高增；中国深减浅增</strong></span>
+<ul>
+<li><strong>传统老牌减产（ 63 ↘ 52%）：</strong>泰 35%（稳定），印尼 15%（退出，老龄化+转棕榈），马来 2%（自己不种了，转型进口原料→加工出口）
+</li>
+<li><strong>新兴产区增产（19 ↗ 30%）：</strong><span style="background-color: #FFF3CE;"><strong>科特 13%（迅速崛起，cagr +15%）</strong></span>， 越 9%/缅老柬 8%（稳中有增）
+</li>
+<li><strong>中国（6%）：</strong>云南（RU 仓单+少量轮胎胶，在向浅色胶转型）、海南（主产浓乳，非轮胎原料），<strong>轮胎胶依赖进口</strong>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span style="color: #4472C6;"><strong>二、贸易分析框架（量）</strong></span>
+<ul>
+<li><strong>年度变化主线：</strong><span style="background-color: #FFF3CE;"><strong>轮胎产业转移+通胀高利率环境</strong></span> <strong>→</strong> <span style="background-color: #FFF3CE;"><strong>欧美减原料进口，直接进口轮胎</strong></span><strong>；</strong><span style="background-color: #FFF3CE;"><strong>东南亚增原料消费+轮胎出口</strong></span><strong>；</strong><span style="background-color: #FFF3CE;"><strong>中国承接过剩天胶</strong></span>
+<ul>
+<li><strong>总贸易量：</strong>跟随产量波动，近年没有明显增长，且出口/产量占比下滑，NR 新增海外交割库 → <span style="color: #6E30A4; background-color: #FFF3CE;"><strong>产区转向深加工，天胶贸易量萎缩</strong></span>
+</li>
+<li><strong>净出：东南亚</strong>（直出天胶 700wt ↘，出轮胎折 150wt ↗，<span style="background-color: #FFF3CE;"><strong>轮胎占比 10%↗ 20%</strong></span><strong>）</strong> 、<strong>非洲</strong> （直接出天胶200wt ↗，来自<strong>增产</strong>）
+</li>
+<li><strong>净进：欧盟</strong>（直进天胶 100wt ↘，轮胎折 60wt ↗，轮胎占比 13 ↗ 38%）、<strong>美国</strong>（天胶 80wt ↘，轮胎折 160wt ↗，轮胎占比 50 ↗ 66%<strong>）</strong>
+</li>
+<li><strong>中国：</strong>进口天胶 650wt（<span style="color: #6E30A4; background-color: #FFF3CE;"><strong>进口占比全球50~60%随海外补库波动</strong></span>，承接过剩天胶），出口轮胎折 380wt ↗
+</li>
+<li><strong>贸易商：</strong>非标套利→产业空头、投机囤货→隐性库存，<strong>路标：</strong>非标价差、深浅价差、库存
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span style="color: #4472C6;"><strong>三、估值（价）</strong></span>
+<ul>
+<li><strong>上游原料角度：</strong>成本支撑（<span style="color: #00B14D;"><strong>季节性</strong></span>；轮胎产业转移→<span style="color: #FE0300;"><strong>逐年抬升</strong></span>）、加工利润（是否有亏损边际？<span style="color: #6E30A4;"><strong>修复路径？</strong></span>）→ 当前估值低（<span style="color: #00B14D;"><strong>原料跌去解决</strong></span>）
+</li>
+<li><strong>下游轮胎角度：</strong>轮胎利润（亏损边际→负反馈？贸易及结算方式？） → 当前估值高
+</li>
+<li><strong>比价结构角度：</strong>内外价差（国内库存定价？海外原料定价？）；深色-浅色价差（<span style="color: #FE0300;"><strong>每年 H1 的 NR-RU 确定性高</strong></span>）；天胶-合成价差 → 当前估值高
+</li>
+</ul>
+</li>
+<li><span style="color: #4472C6;"><strong>四、26 年至今变化</strong></span>
+<ul>
+<li><strong>产区：</strong>原料同比高位，季节性回落偏晚
+</li>
+<li><strong>贸易：产区</strong>出口天胶减，出口轮胎高增；<strong>中国</strong>进口天胶减，出口轮胎放缓；<strong>欧美</strong>进口天胶减，进口轮胎
+</li>
+</ul>
+</li>
+</ul>
+  </div>
+
+  <div class="footer">天然胶数据看板 · 一页通 · 涨 = 红 · 跌 = 绿</div>
+</div>
+</body>
+</html>
