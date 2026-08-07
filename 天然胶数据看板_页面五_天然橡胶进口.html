@@ -154,6 +154,14 @@ tr.abn td{background:#fff7f0;}
 .chart.tall{height:380px;}
 .chart.tire{height:340px;}
 @media (max-width:720px){ .chart.tire{height:300px;} }
+
+/* 米其林轮胎销量表：可折叠地区明细 */
+.tire-total{cursor:pointer; background:#f8fafc;}
+.tire-total:hover{background:#f0f4f8;}
+.tire-total .tri{display:inline-block; width:0; height:0; border-left:5px solid var(--sub); border-top:4px solid transparent; border-bottom:4px solid transparent; margin-right:6px; vertical-align:middle; transition:transform .15s ease;}
+.tire-total.expanded .tri{transform:rotate(90deg);}
+.tire-region.hidden{display:none;}
+.tire-region td:first-child{padding-left:28px !important; color:var(--sub);}
 .cap{font-size:11px; color:var(--sub); margin:2px 0 4px; line-height:1.4;}
 @media (max-width:720px){ .chart{height:185px;} .chart.combo{height:300px;} }
 .footer{margin-top:30px; color:var(--sub); font-size:12px; text-align:center;}
@@ -591,7 +599,7 @@ function makeCard(ch,ticks,grid,row){
   card.innerHTML=ttlHtml+
     '<div class="meta'+(D.metaPct===true?" pctmode":"")+'">'+metaHtml+'</div>';
   var div=document.createElement("div");
-  div.className="chart" + ((D.pageId==="p5" && ch.key==="m_all")?" tall":"");
+  div.className="chart" + ((D.pageId==="p5" && (ch.key==="m_all"||ch.key==="x_all"))?" tall":"");
   card.appendChild(div);
   grid.appendChild(card);
   var c=echarts.init(div);
@@ -756,20 +764,28 @@ function buildMichelin(){
   html+="<table><thead><tr><th>指标</th>";
   M.years.forEach(function(y){ html+="<th>"+y+"</th>"; });
   html+="<th>2025同比%</th><th>占比</th><th>2026H1</th><th>2026H1同比%</th></tr></thead><tbody>";
-  M.table.groups.forEach(function(g){
+  M.table.groups.forEach(function(g,gi){
     var t=g.total;
-    html+="<tr class='grp'><td colspan='"+(M.years.length+4)+"'>"+g.name+"</td></tr>";
-    html+="<tr><td><b>"+g.name+"</b></td>";
+    html+="<tr class='tire-total' data-group='g"+gi+"'><td><b><span class='tri'></span>"+g.name+"</b></td>";
     t.total.forEach(function(v){ html+="<td><b>"+fmt(v,1)+"</b></td>"; });
     html+=tdPct(t.yoy)+tdPct(t.share,true)+"<td>"+fmt(t.h1,1)+"</td>"+tdPct(t.h1yoy)+"</tr>";
     t.regions.forEach(function(rg){
-      html+="<tr><td style='padding-left:22px;color:var(--sub)'>"+rg.label+"</td>";
+      html+="<tr class='tire-region hidden' data-group='g"+gi+"'><td>"+rg.label+"</td>";
       rg.values.forEach(function(v){ html+="<td>"+fmt(v,1)+"</td>"; });
       html+=tdPct(rg.yoy)+tdPct(rg.share,true)+"<td>"+fmt(rg.h1,1)+"</td>"+tdPct(rg.h1yoy)+"</tr>";
     });
   });
   html+="</tbody></table>";
   tc.innerHTML=html; root.appendChild(tc);
+  tc.querySelectorAll(".tire-total").forEach(function(row){
+    row.addEventListener("click",function(){
+      var gid=row.getAttribute("data-group");
+      var expanded=row.classList.toggle("expanded");
+      tc.querySelectorAll(".tire-region[data-group='"+gid+"']").forEach(function(r){
+        r.classList.toggle("hidden",!expanded);
+      });
+    });
+  });
 
   // ---------- 图表 ----------
   function michelinChart(ch){
