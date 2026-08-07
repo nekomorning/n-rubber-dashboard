@@ -162,11 +162,14 @@ tr.abn td{background:#fff7f0;}
 .tire-total.expanded .tri{transform:rotate(90deg);}
 .tire-region.hidden{display:none;}
 .tire-region td:first-child{padding-left:28px !important; color:var(--sub);}
-.tire-cell{text-align:center;}
+.tire-cell{padding:6px 10px; text-align:center;}
 .tire-cell .tval{font-size:13px; line-height:1.25; display:block;}
-.tire-cell .tyoy{font-size:11px; line-height:1.15; display:block; margin-top:2px; color:var(--sub);}
+.tire-cell .tyoy{font-size:10px; line-height:1.15; display:block; margin-top:2px; color:var(--sub);}
 .tire-cell .tyoy.up{color:#d93025;}
 .tire-cell .tyoy.down{color:#1e8e3e;}
+.tire-th{padding:6px 10px; text-align:center; vertical-align:bottom;}
+.tire-th .th-main{font-size:13px; line-height:1.25; display:block; font-weight:600;}
+.tire-th .th-sub{font-size:10px; line-height:1.15; display:block; margin-top:2px; color:var(--sub); font-weight:400;}
 .cap{font-size:11px; color:var(--sub); margin:2px 0 4px; line-height:1.4;}
 @media (max-width:720px){ .chart{height:185px;} .chart.combo{height:300px;} }
 .footer{margin-top:30px; color:var(--sub); font-size:12px; text-align:center;}
@@ -766,7 +769,8 @@ function buildMichelin(){
   // ---------- 数据表 ----------
   var tc=document.createElement("div"); tc.className="tablecard";
   var html="<h2>全球轮胎销量明细（来源："+M.source+" · 单位："+M.unit+"）</h2>";
-  function tireCell(v, yoy, isTotal){
+  function tireCell(v, yoy, isTotal, extraClass){
+    extraClass = extraClass || 'tire-cell tire-year';
     var val=(v===null||v===undefined)?"—":fmt(v,1);
     var yoyHtml="";
     if(yoy!==null && yoy!==undefined && !isNaN(yoy)){
@@ -774,20 +778,22 @@ function buildMichelin(){
       var s=(yoy>0?"+":"")+(yoy*100).toFixed(1)+"%";
       yoyHtml="<span class='"+cls+"'>"+s+"</span>";
     }
-    return "<td class='tire-cell tire-year'>"+(isTotal?"<b class='tval'>"+val+"</b>":"<span class='tval'>"+val+"</span>")+yoyHtml+"</td>";
+    return "<td class='"+extraClass+"'>"+(isTotal?"<b class='tval'>"+val+"</b>":"<span class='tval'>"+val+"</span>")+yoyHtml+"</td>";
   }
   html+="<table><thead><tr><th>指标</th>";
-  M.years.forEach(function(y, i){ html+="<th>"+y+(i>0?"<br><span style='font-size:10px;color:var(--sub);font-weight:400;'>同比%</span>":"")+"</th>"; });
-  html+="<th>占比</th><th>2025H1</th><th>2026H1</th><th>2026H1同比%</th></tr></thead><tbody>";
+  M.years.forEach(function(y, i){
+    html+="<th class='tire-th'><span class='th-main'>"+y+"</span>"+(i>0?"<span class='th-sub'>同比%</span>":"")+"</th>";
+  });
+  html+="<th>占比</th><th>2025H1</th><th class='tire-th'><span class='th-main'>2026H1</span><span class='th-sub'>同比%</span></th></tr></thead><tbody>";
   M.table.groups.forEach(function(g,gi){
     var t=g.total;
     html+="<tr class='tire-total' data-group='g"+gi+"'><td><b><span class='tri'></span>"+g.name+"</b></td>";
     t.total.forEach(function(v,i){ html+=tireCell(v, t.yoySeries[i], true); });
-    html+=tdPct(t.share,true)+"<td>"+fmt(t.h1prev,1)+"</td><td>"+fmt(t.h1,1)+"</td>"+tdPct(t.h1yoy)+"</tr>";
+    html+=tdPct(t.share,true)+"<td>"+fmt(t.h1prev,1)+"</td>"+tireCell(t.h1, t.h1yoy, true, 'tire-cell')+"</tr>";
     t.regions.forEach(function(rg){
       html+="<tr class='tire-region hidden' data-group='g"+gi+"'><td>"+rg.label+"</td>";
       rg.values.forEach(function(v,i){ html+=tireCell(v, rg.yoySeries[i], false); });
-      html+=tdPct(rg.share,true)+"<td>"+fmt(rg.h1prev,1)+"</td><td>"+fmt(rg.h1,1)+"</td>"+tdPct(rg.h1yoy)+"</tr>";
+      html+=tdPct(rg.share,true)+"<td>"+fmt(rg.h1prev,1)+"</td>"+tireCell(rg.h1, rg.h1yoy, false, 'tire-cell')+"</tr>";
     });
   });
   html+="</tbody></table>";
