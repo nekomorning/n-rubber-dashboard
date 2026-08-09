@@ -180,6 +180,13 @@ tr.abn td{background:#fff7f0;}
 .drill-tri{display:inline-block; width:0; height:0; border-left:5px solid var(--sub); border-top:4px solid transparent; border-bottom:4px solid transparent; margin-right:7px; vertical-align:middle; transition:transform .15s ease;}
 .drill-total.expanded .drill-tri{transform:rotate(90deg);}
 .drill-detail.hidden{display:none;}
+/* 下钻明细 = 主表真实 <tr> 行：列对齐、格式一致（同 cell/COLS）；仅首列缩进以示层级 */
+.drill-detail td:first-child{padding-left:28px;}
+/* 修复特异性：明细 pct 单元格必须红涨绿跌（高于 base td / 无用 .drill-table 兜底） */
+.drill-detail td.up{color:var(--up); font-weight:600;}
+.drill-detail td.down{color:var(--down); font-weight:600;}
+.drill-detail td.flat{color:var(--flat);}
+/* 旧嵌套表样式（已弃用，保留无害） */
 .drill-table{width:100%; border-collapse:collapse; margin:2px 0 6px;}
 .drill-table td{font-size:12px; padding:5px 10px; text-align:center; border-top:1px dashed var(--border); color:#42506a;}
 .drill-table td:first-child{padding-left:30px !important; text-align:left; color:var(--sub);}
@@ -544,9 +551,11 @@ function buildTable(){
       }
       tb.appendChild(trc);
       if(hasDrill){
-        var trd=document.createElement("tr"); trd.className="drill-detail hidden";
-        var dtd=document.createElement("td"); dtd.colSpan=NCOL; dtd.innerHTML=buildDrillDetail(r.key, COLS, cell);
-        trd.appendChild(dtd); tb.appendChild(trd);
+        D.drill[r.key].forEach(function(rr){
+          var trd=document.createElement("tr"); trd.className="drill-detail hidden";
+          trd.innerHTML=COLS.map(function(c){ return cell(c, rr); }).join("");
+          tb.appendChild(trd);
+        });
       }
       return;
     }
@@ -573,11 +582,12 @@ function buildTable(){
 }
 
 function toggleDrill(tr){
-  var next=tr.nextElementSibling;
-  if(next && next.classList.contains("drill-detail")){
-    var hidden=next.classList.toggle("hidden");
-    tr.classList.toggle("expanded", !hidden);
-  }
+  // 主行后跟随若干 .drill-detail 子行，整体切换显隐
+  var n=tr.nextElementSibling, anyHidden=false;
+  while(n && n.classList.contains("drill-detail")){ if(n.classList.contains("hidden")) anyHidden=true; n=n.nextElementSibling; }
+  n=tr.nextElementSibling;
+  while(n && n.classList.contains("drill-detail")){ n.classList.toggle("hidden", !anyHidden); n=n.nextElementSibling; }
+  tr.classList.toggle("expanded", anyHidden); // 原为隐藏 -> 现展开
 }
 function buildDrillDetail(key, COLS, cellFn){
   var rows=D.drill[key]||[]; var html="<table class='drill-table'><tbody>";
