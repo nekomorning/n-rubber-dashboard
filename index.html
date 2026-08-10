@@ -304,6 +304,13 @@ var UNIT=D.unit||"万吨";
 var charts=[];          // 季节图（受年份筛选影响）
 var allCharts=[];       // 全部图表（resize 用）
 var tireType="乘用车胎"; // 全局「轮胎种类」筛选：仅 半钢(乘用车胎/401110) / 全钢(卡客车胎/401120) 两档，无「全部」默认态
+// 轮胎种类文字切换：仅 p6 页面生效；将数据中的「轮胎」按 tireType 替换为「半钢胎/全钢胎」短名
+function tireLabel(s){
+  if(!s || D.pageId!=="p6") return s;
+  if(tireType==="乘用车胎") return String(s).replace(/轮胎/g, "半钢胎");
+  if(tireType==="卡客车胎") return String(s).replace(/轮胎/g, "全钢胎");
+  return s;
+}
 var yearVisible={};
 var YEAR_COLORS={
   "2020":"#94A3B8",  // 灰蓝
@@ -516,7 +523,7 @@ function buildSummary(){
   var ytdMode = !!(D.summary && D.summary.ytdMode);
   var html="<h2>核心变化速览</h2>";
   (D.summary.groups||[]).forEach(function(grp){
-    html+="<div><span class='lead'>"+grp.lead+" · </span>"+dateTxt+"，";
+    html+="<div><span class='lead'>"+tireLabel(grp.lead)+" · </span>"+dateTxt+"，";
     html+=grp.items.map(function(it){ return ytdMode ? segYtd(it.key,it.name) : seg(it.key,it.name,it.pct); }).join("、")+"。</div>";
   });
   if(D.summary.spotRanking){
@@ -1019,11 +1026,11 @@ function buildSections(){
   var ticks=monthTicks();
   D.layout.forEach(function(sec){
     var h=document.createElement("div");
-    h.className="section-title"; h.textContent=sec.section;
+    h.className="section-title"; h.textContent=tireLabel(sec.section);
     root.appendChild(h);
     sec.rows.forEach(function(row){
       var lbl=document.createElement("div");
-      lbl.className="row-label"; lbl.textContent=row.label;
+      lbl.className="row-label"; lbl.textContent=tireLabel(row.label);
       root.appendChild(lbl);
       // 产区分组下方的定性一句话总结（与顶部核心速览同款，颜色染色）
       if(row.summary){
@@ -1073,11 +1080,10 @@ function makeCard(ch,ticks,grid,row){
       '<span class="dt">'+(st.latestDate||"")+'</span>';
   }
   // 仅百分比模式下把「最新月份」移到标题行右侧，给 meta 让出横向空间
-  // 轮胎种类后缀（· 乘用车胎/卡客车胎）仅作用于页面六（半钢/全钢全局筛选）
-  var typeTag=(D.pageId==="p6" && tireType!=="总计") ? " · "+tireType : "";
+  // 轮胎种类文字切换由 tireLabel() 统一处理（替换「轮胎」→「半钢胎/全钢胎」），不再附加 typeTag 后缀
   var ttlHtml=(D.metaPct===true)
-    ? '<div class="ttl ttlrow"><span>'+ind.title+typeTag+'</span><span class="dt">'+(st.latestDate||"")+'</span></div>'
-    : '<div class="ttl">'+ind.title+typeTag+'</div>';
+    ? '<div class="ttl ttlrow"><span>'+tireLabel(ind.title)+'</span><span class="dt">'+(st.latestDate||"")+'</span></div>'
+    : '<div class="ttl">'+tireLabel(ind.title)+'</div>';
   card.innerHTML=ttlHtml+
     '<div class="meta'+(D.metaPct===true?" pctmode":"")+'">'+metaHtml+'</div>';
   var div=document.createElement("div");
@@ -1263,7 +1269,7 @@ function buildMichelin(){
   html+="<th>占比</th><th>2025H1</th><th class='tire-th'><span class='th-main'>2026H1</span><span class='th-sub'>同比%</span></th></tr></thead><tbody>";
   M.table.groups.forEach(function(g,gi){
     var t=g.total;
-    html+="<tr class='tire-total' data-group='g"+gi+"'><td><b><span class='tri'></span>"+g.name+"</b></td>";
+    html+="<tr class='tire-total' data-group='g"+gi+"'><td><b><span class='tri'></span>"+tireLabel(g.name)+"</b></td>";
     t.total.forEach(function(v,i){ html+=tireCell(v, t.yoySeries[i], true); });
     html+=tdPct(t.share,true)+"<td>"+fmt(t.h1prev,1)+"</td>"+tireCell(t.h1, t.h1yoy, true, 'tire-cell')+"</tr>";
     t.regions.forEach(function(rg){
