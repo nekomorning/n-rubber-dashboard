@@ -250,11 +250,12 @@ tr.abn td{background:#fff7f0;}
     <span class="lbl" id="fRubberLbl">橡胶种类</span><select id="fRubber" class="fsel"></select>
     <span class="hint" id="filterHint">单位：万吨</span>
   </div>
-  <div class="card" id="filterCard">
+  <div class="card" id="filterSingle">
     <div class="ttl ttlrow"><span id="filterTtl"></span><span class="dt" id="filterDt"></span></div>
     <div class="meta pctmode" id="filterMeta"></div>
     <div id="filterChart" class="chart tall"></div>
   </div>
+  <div id="filterCharts" class="grid c3" style="margin-top:10px;"></div>
 
   <div class="footer">天然胶数据看板 · <span id="footPage"></span> · 涨=红 跌=绿 · 年份按固定配色区分（20灰蓝 / 21青绿 / 22紫 / 23蓝 / 24橙 / 25红 / 26黑）；预报为黑色虚线</div>
 </div>
@@ -758,6 +759,7 @@ function buildSankey(){
 // ================= 自定义筛选面板（仅影响下方季节图） =================
 var gF = {dir:"import", focus:"全球合计", cparty:"全球合计", rubber:"总计"};
 var filterChartInst = null;
+var filterChartInsts = [];      // 多图模式下的所有 ECharts 实例
 
 function getFilterSeries(dir, focus, cparty, rubber){
   var M = D.filterDB[dir];
@@ -799,6 +801,64 @@ function monthDictToSeries(d){
 function renderFilterChart(){
   if(!D.filterDB) return;
   var dir=gF.dir, focus=gF.focus, cparty=gF.cparty, rubber=gF.rubber;
+  var dirName = (dir === "import") ? "进口" : "出口";
+
+  // 计算要渲染的图表配置列表
+  // 多图触发条件：focus 为具体国家 + 来源国=全球合计（自动取 Top 5 counterpart）
+  var charts = [];
+  if(focus !== "全球合计" && cparty === "全球合计"){
+    var top5 = topCounterparts(dir, focus, rubber);
+    charts.push({focus:focus, cparty:"全球合计", rubber:rubber, isGlobal:true});
+    top5.forEach(function(c){ charts.push({focus:focus, cparty:c, rubber:rubber, isGlobal:false}); });
+  } else {
+    charts.push({focus:focus, cparty:cparty, rubber:rubber, isGlobal:(cparty==="全球合计")});
+  }
+
+  // 容器切换（先 dispose 旧实例，避免 DOM 残留）
+  filterChartInsts.forEach(function(i){ try{i.dispose();}catch(e){} });
+  filterChartInsts = [];
+  if(filterChartInst){ try{filterChartInst.dispose();}catch(e){} filterChartInst=null; }
+  document.getElementById("filterSingle").style.display = (charts.length===1) ? "" : "none";
+  document.getElementById("filterCharts").style.display  = (charts.length===1) ? "none" : "";
+
+  if(charts.length === 1){
+    renderSingleFilterChart(charts[0]);
+  } else {
+    var mount = document.getElementById("filterCharts");
+    mount.innerHTML = "";
+    charts.forEach(function(cfg, idx){ cfg._idx = idx; renderMultiFilterCard(mount, dirName, cfg); });
+  }
+}
+
+// focus 在 rubber 口径下，按近 12 个月累计贸易量排序的 Top 5 counterpart 国家名
+function topCounterparts(dir, focus, rubber){
+  var M = D.filterDB[dir];
+  if(!M || !M.flow[focus]) return [];
+  var rbs = (rubber === "总计") ? (D.filterMeta.totalParts || ["天然橡胶","混合橡胶","复合橡胶"]) : [rubber];
+  // 候选国家 = 所有 rb 下 flow[focus][rb] 的 keys 的并集
+  var cands = new Set();
+  rbs.forEach(function(rb){
+    var m = M.flow[focus][rb];
+    if(m) Object.keys(m).forEach(function(c){ cands.add(c); });
+  });
+  // 累计最近 12 个月贸易量
+  var byC = {};
+  cands.forEach(function(c){
+    var sum = 0;
+    rbs.forEach(function(rb){
+      var m = M.flow[focus][rb] && M.flow[focus][rb][c];
+      if(!m) return;
+      var months = Object.keys(m).sort().slice(-12);
+      months.forEach(function(mm){ sum += (m[mm]||0); });
+    });
+    byC[c] = sum;
+  });
+  return Object.keys(byC).sort(function(a,b){ return byC[b]-byC[a]; }).slice(0,5);
+}
+
+// 单图分支（保留原标题+meta+dt+单图结构）
+function renderSingleFilterChart(cfg){
+  var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
   var sdict = getFilterSeries(dir, focus, cparty, rubber);
   var ser = monthDictToSeries(sdict);
   var xl = D.xlabels, isMon = (D.xmode === "month");
@@ -806,8 +866,7 @@ function renderFilterChart(){
 
   var dirName = (dir === "import") ? "进口" : "出口";
   var cpText = (cparty === "全球合计") ? "全球合计" : ((dir === "import") ? ("自"+cparty) : ("至"+cparty));
-  var title = focus + " · " + dirName + " · " + cpText + " · " + rubber;
-  document.getElementById("filterTtl").textContent = title;
+  document.getElementById("filterTtl").textContent = focus + " · " + dirName + " · " + cpText + " · " + rubber;
 
   // 统计量（与一览表同构）
   var ms = Object.keys(sdict).sort();
@@ -844,6 +903,44 @@ function renderFilterChart(){
   document.getElementById("filterMeta").innerHTML = metaHtml;
   document.getElementById("filterDt").textContent = (last || "");
 
+  if(!filterChartInst) filterChartInst = echarts.init(document.getElementById("filterChart"));
+  filterChartInst.setOption(buildFilterChartOption(ser), true);
+  D.years.forEach(function(y){ if(!yearVisible[y]) filterChartInst.dispatchAction({type:"legendToggleSelect",name:String(y)}); });
+  if(charts.indexOf(filterChartInst) < 0){ charts.push(filterChartInst); allCharts.push(filterChartInst); }
+}
+
+// 多图分支：单卡渲染（标题+图，简化）
+function renderMultiFilterCard(mount, dirName, cfg){
+  var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
+  var sdict = getFilterSeries(dir, focus, cparty, rubber);
+  var ser = monthDictToSeries(sdict);
+
+  var card = document.createElement("div");
+  card.className = "card";
+  var cpText = (cparty === "全球合计") ? "全球合计" : ((dir === "import") ? ("自"+cparty) : ("至"+cparty));
+  var tag = cfg.isGlobal ? '<span class="dt" style="float:right;font-size:11px;color:var(--sub);font-weight:400;">全球总计</span>'
+                         : '<span class="dt" style="float:right;font-size:11px;color:var(--sub);font-weight:400;">Top'+cfg._idx+'</span>';
+  var ttl = document.createElement("div");
+  ttl.className = "ttl";
+  ttl.innerHTML = focus + " · " + dirName + " · " + cpText + " · " + rubber + tag;
+  card.appendChild(ttl);
+  var chartDiv = document.createElement("div");
+  chartDiv.style.width = "100%";
+  chartDiv.style.height = "190px";
+  card.appendChild(chartDiv);
+  mount.appendChild(card);
+
+  var inst = echarts.init(chartDiv);
+  inst.setOption(buildFilterChartOption(ser), true);
+  D.years.forEach(function(y){ if(!yearVisible[y]) inst.dispatchAction({type:"legendToggleSelect",name:String(y)}); });
+  if(charts.indexOf(inst) < 0){ charts.push(inst); allCharts.push(inst); }
+  filterChartInsts.push(inst);
+}
+
+// 共享：构造图表 option（单图/多图都用）
+function buildFilterChartOption(ser){
+  var xl = D.xlabels, isMon = (D.xmode === "month");
+  var ticks2 = {}; xl.forEach(function(l,i){ ticks2[i] = l; });
   var series=[], legend=[];
   D.years.forEach(function(y){
     var pts = ser[String(y)];
@@ -856,8 +953,7 @@ function renderFilterChart(){
       itemStyle:{color:yearColor(y)}, emphasis:{focus:"series"}, z:isLatest?10:5
     });
   });
-  if(!filterChartInst) filterChartInst = echarts.init(document.getElementById("filterChart"));
-  filterChartInst.setOption({
+  return {
     animation:false,
     grid:{left:8,right:14,top:26,bottom:4,containLabel:true},
     legend:{show:true, top:0, right:0, itemWidth:14, itemHeight:2, icon:"rect",
@@ -879,9 +975,7 @@ function renderFilterChart(){
         formatter:function(v){ return Math.abs(v)>=10000?(v/10000)+"万":(Math.abs(v)>=1000?(v/1000)+"k":v); }},
       splitLine:{lineStyle:{color:"#eef1f6"}}},
     series:series
-  }, true);
-  D.years.forEach(function(y){ if(!yearVisible[y]) filterChartInst.dispatchAction({type:"legendToggleSelect",name:String(y)}); });
-  if(charts.indexOf(filterChartInst) < 0){ charts.push(filterChartInst); allCharts.push(filterChartInst); }
+  };
 }
 
 function buildFilterPanel(){
