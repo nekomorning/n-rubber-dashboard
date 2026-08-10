@@ -304,6 +304,13 @@ var UNIT=D.unit||"万吨";
 var charts=[];          // 季节图（受年份筛选影响）
 var allCharts=[];       // 全部图表（resize 用）
 var tireType="乘用车胎"; // 全局「轮胎种类」筛选：仅 半钢(乘用车胎/401110) / 全钢(卡客车胎/401120) 两档，无「全部」默认态
+// 轮胎种类文字切换：仅 p6 页面生效；将数据中的「轮胎」按 tireType 替换为「半钢胎/全钢胎」短名
+function tireLabel(s){
+  if(!s || D.pageId!=="p6") return s;
+  if(tireType==="乘用车胎") return String(s).replace(/轮胎/g, "半钢胎");
+  if(tireType==="卡客车胎") return String(s).replace(/轮胎/g, "全钢胎");
+  return s;
+}
 var yearVisible={};
 var YEAR_COLORS={
   "2020":"#94A3B8",  // 灰蓝
@@ -516,7 +523,7 @@ function buildSummary(){
   var ytdMode = !!(D.summary && D.summary.ytdMode);
   var html="<h2>核心变化速览</h2>";
   (D.summary.groups||[]).forEach(function(grp){
-    html+="<div><span class='lead'>"+grp.lead+" · </span>"+dateTxt+"，";
+    html+="<div><span class='lead'>"+tireLabel(grp.lead)+" · </span>"+dateTxt+"，";
     html+=grp.items.map(function(it){ return ytdMode ? segYtd(it.key,it.name) : seg(it.key,it.name,it.pct); }).join("、")+"。</div>";
   });
   if(D.summary.spotRanking){
@@ -856,24 +863,13 @@ function topCounterparts(dir, focus, rubber){
   return Object.keys(byC).sort(function(a,b){ return byC[b]-byC[a]; }).slice(0,5);
 }
 
-// 单图分支（保留原标题+meta+dt+单图结构）
-function renderSingleFilterChart(cfg){
-  var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
-  var sdict = getFilterSeries(dir, focus, cparty, rubber);
-  var ser = monthDictToSeries(sdict);
-  var xl = D.xlabels, isMon = (D.xmode === "month");
-  var ticks2 = {}; xl.forEach(function(l,i){ ticks2[i] = l; });
-
-  var dirName = (dir === "import") ? "进口" : "出口";
-  var cpText = (cparty === "全球合计") ? "全球合计" : ((dir === "import") ? ("自"+cparty) : ("至"+cparty));
-  document.getElementById("filterTtl").textContent = focus + " · " + dirName + " · " + cpText + " · " + rubber;
-
-  // 统计量（与一览表同构）
+// 共享：单图/多图都用的统计量计算（sdict={month:val} → meta 信息）
+function computeFilterMeta(sdict){
   var ms = Object.keys(sdict).sort();
   var last = ms.length ? ms[ms.length-1] : null;
   var latest = last ? sdict[last] : null;
-  var prev = null, prevV = null;
-  if(ms.length >= 2){ prev = ms[ms.length-2]; prevV = sdict[prev]; }
+  var prevV = null;
+  if(ms.length >= 2) prevV = sdict[ms[ms.length-2]];
   var yoyV = null;
   if(last){ var y=+last.slice(0,4), mm=last.slice(5); var yk=(y-1)+"-"+mm; if(yk in sdict) yoyV = sdict[yk]; }
   var ytdV = null, ytdLy = null;
@@ -891,7 +887,6 @@ function renderSingleFilterChart(cfg){
   var ychg = (yoyV!=null && latest!=null) ? latest-yoyV : null;
   var ypct = (ychg!=null && yoyV) ? ychg/Math.abs(yoyV)*100 : null;
   var ytdPct = (ytdLy) ? (ytdV-ytdLy)/Math.abs(ytdLy)*100 : null;
-
   var pctSpan = function(lab,v){
     if(v===null||v===undefined||isNaN(v)) return '<span class="chg flat">'+lab+' —</span>';
     return '<span class="chg '+chgCls(v)+'">'+lab+' '+(v>0?"+":"")+v.toFixed(DEC_PCT)+'%</span>';
@@ -900,8 +895,22 @@ function renderSingleFilterChart(cfg){
     ? '<span class="val">—<span class="unit"> '+UNIT+'</span></span><span class="chg flat">该筛选无数据</span>'
     : '<span class="val">'+fmt(latest, DEC)+'<span class="unit"> '+UNIT+'</span></span>'+
       pctSpan("环比",pct)+pctSpan("同比",ypct)+pctSpan("累计同比",ytdPct);
-  document.getElementById("filterMeta").innerHTML = metaHtml;
-  document.getElementById("filterDt").textContent = (last || "");
+  return {last:last, latest:latest, metaHtml:metaHtml};
+}
+
+// 单图分支（保留原标题+meta+dt+单图结构）
+function renderSingleFilterChart(cfg){
+  var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
+  var sdict = getFilterSeries(dir, focus, cparty, rubber);
+  var ser = monthDictToSeries(sdict);
+
+  var dirName = (dir === "import") ? "进口" : "出口";
+  var cpText = (cparty === "全球合计") ? "全球合计" : ((dir === "import") ? ("自"+cparty) : ("至"+cparty));
+  document.getElementById("filterTtl").textContent = focus + " · " + dirName + " · " + cpText + " · " + rubber;
+
+  var meta = computeFilterMeta(sdict);
+  document.getElementById("filterMeta").innerHTML = meta.metaHtml;
+  document.getElementById("filterDt").textContent = (meta.last || "");
 
   if(!filterChartInst) filterChartInst = echarts.init(document.getElementById("filterChart"));
   filterChartInst.setOption(buildFilterChartOption(ser), true);
@@ -909,11 +918,12 @@ function renderSingleFilterChart(cfg){
   if(charts.indexOf(filterChartInst) < 0){ charts.push(filterChartInst); allCharts.push(filterChartInst); }
 }
 
-// 多图分支：单卡渲染（标题+图，简化）
+// 多图分支：单卡渲染（标题+meta+图，与单图同款）
 function renderMultiFilterCard(mount, dirName, cfg){
   var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
   var sdict = getFilterSeries(dir, focus, cparty, rubber);
   var ser = monthDictToSeries(sdict);
+  var meta = computeFilterMeta(sdict);
 
   var card = document.createElement("div");
   card.className = "card";
@@ -924,9 +934,14 @@ function renderMultiFilterCard(mount, dirName, cfg){
   ttl.className = "ttl";
   ttl.innerHTML = focus + " · " + dirName + " · " + cpText + " · " + rubber + tag;
   card.appendChild(ttl);
+  // meta 行：最新值+环比/同比/累计同比%（与单图同款）
+  var metaDiv = document.createElement("div");
+  metaDiv.className = "meta";
+  metaDiv.innerHTML = meta.metaHtml;
+  card.appendChild(metaDiv);
   var chartDiv = document.createElement("div");
   chartDiv.style.width = "100%";
-  chartDiv.style.height = "190px";
+  chartDiv.style.height = "170px";
   card.appendChild(chartDiv);
   mount.appendChild(card);
 
@@ -1019,11 +1034,11 @@ function buildSections(){
   var ticks=monthTicks();
   D.layout.forEach(function(sec){
     var h=document.createElement("div");
-    h.className="section-title"; h.textContent=sec.section;
+    h.className="section-title"; h.textContent=tireLabel(sec.section);
     root.appendChild(h);
     sec.rows.forEach(function(row){
       var lbl=document.createElement("div");
-      lbl.className="row-label"; lbl.textContent=row.label;
+      lbl.className="row-label"; lbl.textContent=tireLabel(row.label);
       root.appendChild(lbl);
       // 产区分组下方的定性一句话总结（与顶部核心速览同款，颜色染色）
       if(row.summary){
@@ -1073,11 +1088,10 @@ function makeCard(ch,ticks,grid,row){
       '<span class="dt">'+(st.latestDate||"")+'</span>';
   }
   // 仅百分比模式下把「最新月份」移到标题行右侧，给 meta 让出横向空间
-  // 轮胎种类后缀（· 乘用车胎/卡客车胎）仅作用于页面六（半钢/全钢全局筛选）
-  var typeTag=(D.pageId==="p6" && tireType!=="总计") ? " · "+tireType : "";
+  // 轮胎种类文字切换由 tireLabel() 统一处理（替换「轮胎」→「半钢胎/全钢胎」），不再附加 typeTag 后缀
   var ttlHtml=(D.metaPct===true)
-    ? '<div class="ttl ttlrow"><span>'+ind.title+typeTag+'</span><span class="dt">'+(st.latestDate||"")+'</span></div>'
-    : '<div class="ttl">'+ind.title+typeTag+'</div>';
+    ? '<div class="ttl ttlrow"><span>'+tireLabel(ind.title)+'</span><span class="dt">'+(st.latestDate||"")+'</span></div>'
+    : '<div class="ttl">'+tireLabel(ind.title)+'</div>';
   card.innerHTML=ttlHtml+
     '<div class="meta'+(D.metaPct===true?" pctmode":"")+'">'+metaHtml+'</div>';
   var div=document.createElement("div");
@@ -1263,7 +1277,7 @@ function buildMichelin(){
   html+="<th>占比</th><th>2025H1</th><th class='tire-th'><span class='th-main'>2026H1</span><span class='th-sub'>同比%</span></th></tr></thead><tbody>";
   M.table.groups.forEach(function(g,gi){
     var t=g.total;
-    html+="<tr class='tire-total' data-group='g"+gi+"'><td><b><span class='tri'></span>"+g.name+"</b></td>";
+    html+="<tr class='tire-total' data-group='g"+gi+"'><td><b><span class='tri'></span>"+tireLabel(g.name)+"</b></td>";
     t.total.forEach(function(v,i){ html+=tireCell(v, t.yoySeries[i], true); });
     html+=tdPct(t.share,true)+"<td>"+fmt(t.h1prev,1)+"</td>"+tireCell(t.h1, t.h1yoy, true, 'tire-cell')+"</tr>";
     t.regions.forEach(function(rg){
