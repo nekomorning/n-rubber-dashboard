@@ -863,24 +863,13 @@ function topCounterparts(dir, focus, rubber){
   return Object.keys(byC).sort(function(a,b){ return byC[b]-byC[a]; }).slice(0,5);
 }
 
-// 单图分支（保留原标题+meta+dt+单图结构）
-function renderSingleFilterChart(cfg){
-  var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
-  var sdict = getFilterSeries(dir, focus, cparty, rubber);
-  var ser = monthDictToSeries(sdict);
-  var xl = D.xlabels, isMon = (D.xmode === "month");
-  var ticks2 = {}; xl.forEach(function(l,i){ ticks2[i] = l; });
-
-  var dirName = (dir === "import") ? "进口" : "出口";
-  var cpText = (cparty === "全球合计") ? "全球合计" : ((dir === "import") ? ("自"+cparty) : ("至"+cparty));
-  document.getElementById("filterTtl").textContent = focus + " · " + dirName + " · " + cpText + " · " + rubber;
-
-  // 统计量（与一览表同构）
+// 共享：单图/多图都用的统计量计算（sdict={month:val} → meta 信息）
+function computeFilterMeta(sdict){
   var ms = Object.keys(sdict).sort();
   var last = ms.length ? ms[ms.length-1] : null;
   var latest = last ? sdict[last] : null;
-  var prev = null, prevV = null;
-  if(ms.length >= 2){ prev = ms[ms.length-2]; prevV = sdict[prev]; }
+  var prevV = null;
+  if(ms.length >= 2) prevV = sdict[ms[ms.length-2]];
   var yoyV = null;
   if(last){ var y=+last.slice(0,4), mm=last.slice(5); var yk=(y-1)+"-"+mm; if(yk in sdict) yoyV = sdict[yk]; }
   var ytdV = null, ytdLy = null;
@@ -898,7 +887,6 @@ function renderSingleFilterChart(cfg){
   var ychg = (yoyV!=null && latest!=null) ? latest-yoyV : null;
   var ypct = (ychg!=null && yoyV) ? ychg/Math.abs(yoyV)*100 : null;
   var ytdPct = (ytdLy) ? (ytdV-ytdLy)/Math.abs(ytdLy)*100 : null;
-
   var pctSpan = function(lab,v){
     if(v===null||v===undefined||isNaN(v)) return '<span class="chg flat">'+lab+' —</span>';
     return '<span class="chg '+chgCls(v)+'">'+lab+' '+(v>0?"+":"")+v.toFixed(DEC_PCT)+'%</span>';
@@ -907,8 +895,22 @@ function renderSingleFilterChart(cfg){
     ? '<span class="val">—<span class="unit"> '+UNIT+'</span></span><span class="chg flat">该筛选无数据</span>'
     : '<span class="val">'+fmt(latest, DEC)+'<span class="unit"> '+UNIT+'</span></span>'+
       pctSpan("环比",pct)+pctSpan("同比",ypct)+pctSpan("累计同比",ytdPct);
-  document.getElementById("filterMeta").innerHTML = metaHtml;
-  document.getElementById("filterDt").textContent = (last || "");
+  return {last:last, latest:latest, metaHtml:metaHtml};
+}
+
+// 单图分支（保留原标题+meta+dt+单图结构）
+function renderSingleFilterChart(cfg){
+  var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
+  var sdict = getFilterSeries(dir, focus, cparty, rubber);
+  var ser = monthDictToSeries(sdict);
+
+  var dirName = (dir === "import") ? "进口" : "出口";
+  var cpText = (cparty === "全球合计") ? "全球合计" : ((dir === "import") ? ("自"+cparty) : ("至"+cparty));
+  document.getElementById("filterTtl").textContent = focus + " · " + dirName + " · " + cpText + " · " + rubber;
+
+  var meta = computeFilterMeta(sdict);
+  document.getElementById("filterMeta").innerHTML = meta.metaHtml;
+  document.getElementById("filterDt").textContent = (meta.last || "");
 
   if(!filterChartInst) filterChartInst = echarts.init(document.getElementById("filterChart"));
   filterChartInst.setOption(buildFilterChartOption(ser), true);
@@ -916,11 +918,12 @@ function renderSingleFilterChart(cfg){
   if(charts.indexOf(filterChartInst) < 0){ charts.push(filterChartInst); allCharts.push(filterChartInst); }
 }
 
-// 多图分支：单卡渲染（标题+图，简化）
+// 多图分支：单卡渲染（标题+meta+图，与单图同款）
 function renderMultiFilterCard(mount, dirName, cfg){
   var dir=gF.dir, focus=cfg.focus, cparty=cfg.cparty, rubber=cfg.rubber;
   var sdict = getFilterSeries(dir, focus, cparty, rubber);
   var ser = monthDictToSeries(sdict);
+  var meta = computeFilterMeta(sdict);
 
   var card = document.createElement("div");
   card.className = "card";
@@ -931,9 +934,14 @@ function renderMultiFilterCard(mount, dirName, cfg){
   ttl.className = "ttl";
   ttl.innerHTML = focus + " · " + dirName + " · " + cpText + " · " + rubber + tag;
   card.appendChild(ttl);
+  // meta 行：最新值+环比/同比/累计同比%（与单图同款）
+  var metaDiv = document.createElement("div");
+  metaDiv.className = "meta";
+  metaDiv.innerHTML = meta.metaHtml;
+  card.appendChild(metaDiv);
   var chartDiv = document.createElement("div");
   chartDiv.style.width = "100%";
-  chartDiv.style.height = "190px";
+  chartDiv.style.height = "170px";
   card.appendChild(chartDiv);
   mount.appendChild(card);
 
