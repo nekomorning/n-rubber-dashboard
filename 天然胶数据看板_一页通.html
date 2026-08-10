@@ -219,21 +219,23 @@ var hvChart=null;
 function renderHoverCard(key, ev){
   var ind=HV.indicators[key];
   if(!ind){ hvCard.classList.remove("show"); return; }
-  // 割胶季节性热图（HTML 网格，非 ECharts）
+  // 割胶季节性热图（HTML 网格，非 ECharts）—— 与天气数据页一致：单元格只显示 1 字（codeMap 映射 4 类），完整标签用 title 鼠标悬停查看
   if(ind.type==="tappingSeason"){
     if(hvChart){ try{hvChart.dispose();}catch(e){} hvChart=null; }
-    var t=ind.tap, html='<div class="hv-tap"><div class="hvt-row"><div class="hvt-h r"></div>';
+    var t=ind.tap, codeMap={"旺产":"旺","过渡":"过","低产":"低","雨季扰动":"雨"},
+        esc=function(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
+    function tapCell(c, rname, mname){
+      if(!c) return '<div class="hvt-c empty">—</div>';
+      return '<div class="hvt-c cat-'+c.c+'" title="'+esc(rname)+' · '+mname+'：'+esc(c.t)+'">'+codeMap[c.c]+'</div>';
+    }
+    var html='<div class="hv-tap"><div class="hvt-row"><div class="hvt-h r"></div>';
     (t.months||[]).forEach(function(m){ html+='<div class="hvt-h">'+m+'</div>'; });
     html+='</div><div class="hvt-row"><div class="hvt-h r">全球主产区</div>';
-    (t.global||[]).forEach(function(c){
-      html+=c?('<div class="hvt-c cat-'+c.c+'">'+c.t+'</div>'):('<div class="hvt-c empty">—</div>');
-    });
+    (t.months||[]).forEach(function(m, i){ html+=tapCell((t.global||[])[i], "全球主产区", m); });
     html+='</div>';
     (t.regions||[]).forEach(function(r){
       html+='<div class="hvt-row"><div class="hvt-h r">'+r.name+'</div>';
-      (r.status||[]).forEach(function(c){
-        html+=c?('<div class="hvt-c cat-'+c.c+'">'+c.t+'</div>'):('<div class="hvt-c empty">—</div>');
-      });
+      (t.months||[]).forEach(function(m, i){ html+=tapCell((r.status||[])[i], r.name, m); });
       html+='</div>';
     });
     html+='</div><div class="hvt-leg"><span><i style="background:#2E9E5B"></i>旺产期</span><span><i style="background:#E69F2E"></i>过渡期</span><span><i style="background:#D9423A"></i>低产期</span><span><i style="background:#2E78C9"></i>雨季扰动</span></div>';
