@@ -626,7 +626,7 @@ function buildTable(){
   function cell(c,r){
     var v=(c.f?r[c.f]:null);
     var hl=(c.hl?" hl":"");
-    if(c.t==="title") return "<td"+hl+">"+r.title+"</td>";
+    if(c.t==="title") return "<td"+hl+">"+tireLabel(r.title)+"</td>";
     if(c.t==="unit")  return "<td"+hl+" style='color:var(--sub)'>"+r.unit+"</td>";
     if(c.t==="date")  return "<td"+hl+" style='color:var(--sub)'>"+(v||"—")+"</td>";
     if(c.t==="pct"){
@@ -648,7 +648,7 @@ function buildTable(){
     var g=groups[r.key]||"";
     if(g!==lastGrp){
       var trg=document.createElement("tr"); trg.className="grp";
-      trg.innerHTML="<td colspan='"+NCOL+"'>"+g+"</td>"; tb.appendChild(trg); lastGrp=g;
+      trg.innerHTML="<td colspan='"+NCOL+"'>"+tireLabel(g)+"</td>"; tb.appendChild(trg); lastGrp=g;
     }
     if(COLS){
       var hasDrill = curDrill() && curDrill()[r.key] && curDrill()[r.key].length;
@@ -676,7 +676,7 @@ function buildTable(){
     var tr=document.createElement("tr");
     if(dAbn||wAbn) tr.className="abn";
     tr.innerHTML=
-      "<td>"+r.title+"</td><td style='color:var(--sub)'>"+r.unit+"</td>"+
+      "<td>"+tireLabel(r.title)+"</td><td style='color:var(--sub)'>"+r.unit+"</td>"+
       "<td style='color:var(--sub)'>"+(r.latestDate||"—")+"</td>"+
       "<td><b>"+fmt(r.latest,r.dec)+"</b></td>"+
       "<td>"+fmt(r.prev,r.dec)+"</td>"+
