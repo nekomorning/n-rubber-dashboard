@@ -511,19 +511,36 @@ function buildSummary(){
       : "（累计同比 <span class='"+chgCls(r.ytdPct)+"'>"+(r.ytdPct>0?"+":"")+r.ytdPct.toFixed(DEC_PCT)+(r.ppMode?"pp":"%")+"</span>）";
     return head+y;
   }
-  var dateTxt;
-  if(D.xmode==="month"){
-    var mm=D.latestDataDate.split("-");
-    dateTxt="截至 "+mm[0]+"年"+parseInt(mm[1],10)+"月";
-  } else {
-    var d=D.latestDataDate.slice(5).split("-");
-    dateTxt=parseInt(d[0],10)+"月"+parseInt(d[1],10)+"日";
+  function fmtDateYM(s){ var mm=s.split("-"); return mm[0]+"年"+parseInt(mm[1],10)+"月"; }
+  function fmtDateMD(s){ var d=s.slice(5).split("-"); return parseInt(d[0],10)+"月"+parseInt(d[1],10)+"日"; }
+  function groupDateTxt(grp){
+    var dates={}, dateItems={};
+    grp.items.forEach(function(it){
+      var r=byKey[it.key];
+      if(r && r.latestDate){
+        dates[r.latestDate]=(dates[r.latestDate]||0)+1;
+        (dateItems[r.latestDate]=dateItems[r.latestDate]||[]).push(it.name);
+      }
+    });
+    var ks=Object.keys(dates);
+    if(ks.length===0) return D.xmode==="month" ? "截至 "+fmtDateYM(D.latestDataDate) : fmtDateMD(D.latestDataDate);
+    if(ks.length===1) return D.xmode==="month" ? "截至 "+fmtDateYM(ks[0]) : fmtDateMD(ks[0]);
+    ks.sort();
+    var base=ks[0], later=ks.slice(1);
+    var notes=[];
+    later.forEach(function(ld){
+      var label=D.xmode==="month" ? fmtDateYM(ld) : fmtDateMD(ld);
+      notes.push(dateItems[ld].join("、")+"更新至"+label);
+    });
+    return D.xmode==="month"
+      ? "截至 "+fmtDateYM(base)+"（"+notes.join("，")+"）"
+      : fmtDateMD(base)+"（"+notes.join("，")+"）";
   }
 
   var ytdMode = !!(D.summary && D.summary.ytdMode);
   var html="<h2>核心变化速览</h2>";
   (D.summary.groups||[]).forEach(function(grp){
-    html+="<div><span class='lead'>"+tireLabel(grp.lead)+" · </span>"+dateTxt+"，";
+    html+="<div><span class='lead'>"+tireLabel(grp.lead)+" · </span>"+groupDateTxt(grp)+"，";
     html+=grp.items.map(function(it){ return ytdMode ? segYtd(it.key,it.name) : seg(it.key,it.name,it.pct); }).join("、")+"。</div>";
   });
   if(D.summary.spotRanking){
