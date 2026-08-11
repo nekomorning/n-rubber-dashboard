@@ -365,10 +365,10 @@ function renderSeasonal(){
         color: years.map(yearColor),
         tooltip:{trigger:"axis"},
         legend:{data:years, type:"scroll", top:0, textStyle:{fontSize:7}},
-        grid:{left:28, right:4, top:24, bottom:20},
+        grid:{left:4, right:4, top:24, bottom:18, containLabel:true},
         xAxis:{type:"category", data:["1","2","3","4","5","6","7","8","9","10","11","12"],
-          axisLabel:{fontSize:8, interval:0}},
-        yAxis:{type:"value", axisLabel:{fontSize:8}, scale:true},
+          axisLabel:{fontSize:7, interval:0}},
+        yAxis:{type:"value", axisLabel:{fontSize:7}, scale:true},
         series:series
       });
     });
