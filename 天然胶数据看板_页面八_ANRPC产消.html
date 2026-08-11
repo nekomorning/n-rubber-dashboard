@@ -300,7 +300,8 @@ function renderSeasonal(){
       return;
     }
     var chart=echarts.init(ech); seasonalCharts.push(chart);
-    var years=Object.keys(ser).sort();
+    // 图例仅显示 2021–2026 年度，其余年份线条不绘制
+    var years=Object.keys(ser).sort().filter(function(y){ return +y>=2021; });
     var series=years.map(function(y){
       return {name:y, type:"line", data:ser[y], showSymbol:false,
         lineStyle:{width:1.6}, itemStyle:{color:yearColor(y)}};
@@ -326,7 +327,7 @@ function renderAll(){
     "当前国家："+curCountry+" · 默认滚动到最新月份，向上滚动可查看更早年份";
   document.getElementById("filterSub").textContent="当前国家："+curCountry;
   document.getElementById("seasonalSub").textContent=
-    "当前国家："+curCountry+" · 横轴为月份 1–12，图例为年度，配色参考其他页面";
+    "当前国家："+curCountry+" · 横轴为月份 1–12，图例仅显示 2021–2026 年度，配色参考其他页面";
 }
 function init(){
   if(!D||!D.months){ document.body.insertAdjacentHTML("afterbegin","<div style='padding:20px;color:#c00'>数据未加载</div>"); return; }
