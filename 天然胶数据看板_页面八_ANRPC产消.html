@@ -131,47 +131,56 @@ function buildTabs(){
   });
 }
 
+/* ---------- 列定义（月度表 / 区间筛选 / 年度汇总 共用，跟随视图） ---------- */
+var COL_COLORS={prod:"#1E6FFF",cons:"#12B5A6",balance:"#F59A23"};
+var GROUP_NAMES={prod:"产量（万吨）",cons:"消费量（万吨）",balance:"产消差（万吨）"};
+function getCols(){
+  var cList=D.countries, cols=[], groups=[];
+  if(curView==="byIndicator"){
+    // 三组并列：各国产量 → 各国消费量 → 各国产消差
+    ["prod","cons","balance"].forEach(function(key){
+      groups.push({label:GROUP_NAMES[key], span:cList.length, color:COL_COLORS[key]});
+      cList.forEach(function(c){ cols.push({country:c, key:key, label:c, color:COL_COLORS[key]}); });
+    });
+  } else {
+    // 按国家：每国三列（产量/消费量/产消差）
+    cList.forEach(function(c){
+      groups.push({label:c, span:3, color:"#0f4c81"});
+      ["prod","cons","balance"].forEach(function(key){
+        cols.push({country:c, key:key, label:GROUP_NAMES[key].replace("（万吨）",""), color:COL_COLORS[key]});
+      });
+    });
+  }
+  return {cols:cols, groups:groups};
+}
+/* 两级表头：第一行分组标签（含颜色），第二行各列名（含颜色） */
+function headCells(G){
+  var h="<tr><th class='date-col' rowspan='2'>"+(G.firstCol||"月份")+"</th>";
+  G.groups.forEach(function(g){
+    h+="<th colspan='"+g.span+"' style='background:"+g.color+";color:#fff;'>"+g.label+"</th>";
+  });
+  h+="</tr><tr>";
+  G.cols.forEach(function(col){ h+="<th style='background:"+col.color+";color:#fff;'>"+col.label+"</th>"; });
+  return h+"</tr>";
+}
+
 /* ---------- 月度表（两种视图） ---------- */
 function renderViewBar(){
   var sel=document.getElementById("viewSel");
   sel.value=curView;
-  sel.onchange=function(){ curView=sel.value; renderMonthly(); };
+  sel.onchange=function(){ curView=sel.value; renderAllExceptSeasonal(); };
 }
 function renderMonthly(){
-  var cList=D.countries, head, body="<tbody>";
-  if(curView==="byIndicator"){
-    // 第一行：月份 + 产量/消费量/产消差 三组（各跨 12 列）；第二行：12 国名 ×3
-    head="<thead><tr><th class='date-col' rowspan='2'>月份</th>"
-      +"<th colspan='"+cList.length+"'>产量（万吨）</th>"
-      +"<th colspan='"+cList.length+"'>消费量（万吨）</th>"
-      +"<th colspan='"+cList.length+"'>产消差（万吨）</th></tr><tr>";
-    for(var g=0;g<3;g++){ cList.forEach(function(c){ head+="<th>"+c+"</th>"; }); }
-    head+="</tr></thead>";
-  } else {
-    // 第一行：月份 + 每国跨 3 列；第二行：每国 产量/消费量/产消差
-    head="<thead><tr><th class='date-col' rowspan='2'>月份</th>";
-    cList.forEach(function(c){ head+="<th colspan='3'>"+c+"</th>"; });
-    head+="</tr><tr>";
-    for(var k=0;k<cList.length;k++){ head+="<th>产量</th><th>消费量</th><th>产消差</th>"; }
-    head+="</tr></thead>";
-  }
+  var G=getCols(); G.firstCol="月份";
+  var head="<thead>"+headCells(G)+"</thead>";
+  var body="<tbody>";
   D.months.forEach(function(mo){
     body+="<tr><td class='date-col'>"+mo+"</td>";
-    if(curView==="byIndicator"){
-      cList.forEach(function(c){ body+="<td>"+fmt(D.series[c].prod[mo],"num")+"</td>"; });
-      cList.forEach(function(c){ body+="<td>"+fmt(D.series[c].cons[mo],"num")+"</td>"; });
-      cList.forEach(function(c){
-        var v=D.series[c].balance[mo];
-        body+="<td"+signStyle(v)+">"+fmt(v,"num")+"</td>";
-      });
-    } else {
-      cList.forEach(function(c){
-        var s=D.series[c];
-        body+="<td>"+fmt(s.prod[mo],"num")+"</td>"
-          +"<td>"+fmt(s.cons[mo],"num")+"</td>"
-          +"<td"+signStyle(s.balance[mo])+">"+fmt(s.balance[mo],"num")+"</td>";
-      });
-    }
+    G.cols.forEach(function(col){
+      var v=D.series[col.country][col.key][mo];
+      var sty=(col.key==="balance")?signStyle(v):"";
+      body+="<td"+sty+">"+fmt(v,"num")+"</td>";
+    });
     body+="</tr>";
   });
   body+="</tbody>";
@@ -180,12 +189,7 @@ function renderMonthly(){
   sc.scrollTop=sc.scrollHeight;
 }
 
-/* ---------- filter（固定全球合计） ---------- */
-var FILTER_INDS=[
-  {key:"prod",name:"全球产量"},
-  {key:"cons",name:"全球消费量"},
-  {key:"balance",name:"全球产消差"}
-];
+/* ---------- filter（跟随视图） ---------- */
 function yearRange(){
   var ys=D.months.map(function(m){ return parseInt(m.slice(0,4),10); });
   return [Math.min.apply(null,ys), Math.max.apply(null,ys)];
@@ -228,29 +232,28 @@ function renderFilterBar(){
   [fY,tY,document.getElementById("fM"),document.getElementById("tM")].forEach(function(s){ s.onchange=renderFilterTable; });
   renderFilterTable();
 }
-function aggRange(sy,sm,ey,em,key){
+function aggRange(sy,sm,ey,em,col){
   var vals=[];
   D.months.forEach(function(mo){
     var y=+mo.slice(0,4), m=+mo.slice(5,7);
-    if(inRange(y,m,sy,sm,ey,em)){ var v=D.series["全球合计"][key][mo]; if(v!==null&&v!==undefined) vals.push(v); }
+    if(inRange(y,m,sy,sm,ey,em)){ var v=D.series[col.country][col.key][mo]; if(v!==null&&v!==undefined) vals.push(v); }
   });
   if(!vals.length) return null;
   var s=0; vals.forEach(function(v){ s+=v; }); return s;
 }
 function renderFilterTable(){
+  var G=getCols(); G.firstCol="指标";
   var sy=+document.getElementById("fY").value, sm=+document.getElementById("fM").value;
   var ey=+document.getElementById("tY").value, em=+document.getElementById("tM").value;
   if(sy>ey || (sy===ey&&sm>em)){ document.getElementById("filterWrap").innerHTML="<div class='note'>起始时间不能晚于结束时间</div>"; return; }
-  var sel=FILTER_INDS.map(function(i){ return aggRange(sy,sm,ey,em,i.key); });
-  var lst=FILTER_INDS.map(function(i){ return aggRange(sy-1,sm,ey-1,em,i.key); });
-  var diff=FILTER_INDS.map(function(i,idx){ return (sel[idx]===null||lst[idx]===null)?null:sel[idx]-lst[idx]; });
-  var pct=FILTER_INDS.map(function(i,idx){
+  var sel=G.cols.map(function(col){ return aggRange(sy,sm,ey,em,col); });
+  var lst=G.cols.map(function(col){ return aggRange(sy-1,sm,ey-1,em,col); });
+  var diff=G.cols.map(function(col,idx){ return (sel[idx]===null||lst[idx]===null)?null:sel[idx]-lst[idx]; });
+  var pct=G.cols.map(function(col,idx){
     if(diff[idx]===null||lst[idx]===null||lst[idx]===0) return null;
     return diff[idx]/lst[idx]*100;
   });
-  var head="<thead><tr><th class='date-col'>指标</th>";
-  FILTER_INDS.forEach(function(i){ head+="<th>"+i.name+"（万吨）</th>"; });
-  head+="</tr></thead>";
+  var head="<thead>"+headCells(G)+"</thead>";
   function row(name,arr,isPct,colorFn){
     var r="<tr><td class='date-col'>"+name+"</td>";
     arr.forEach(function(v,idx){
@@ -268,41 +271,30 @@ function renderFilterTable(){
   body+="</tbody>";
   document.getElementById("filterWrap").innerHTML="<table class='data'>"+head+body+"</table>";
   document.getElementById("filterNote").textContent=
-    "区间 "+sy+"年"+sm+"月 至 "+ey+"年"+em+"月 · 全球合计口径 · 区间累计（月相加）；同比对照为去年同期同区间累计";
+    "区间 "+sy+"年"+sm+"月 至 "+ey+"年"+em+"月 · 区间累计（月相加）；同比对照为去年同期同区间累计；列结构与月度表视图一致";
 }
 
-/* ---------- annual（固定全球合计） ---------- */
-var ANNUAL_COLS=[
-  {key:"prod",name:"全球年产量（万吨）",type:"num"},
-  {key:"cons",name:"全球年消费量（万吨）",type:"num"},
-  {key:"balance",name:"年产销差（万吨）",type:"num"},
-  {key:"prodYoY",name:"产量同比",type:"pct"},
-  {key:"consYoY",name:"消费量同比",type:"pct"}
-];
+/* ---------- annual（跟随视图） ---------- */
 function renderAnnual(){
-  var a=D.annual["全球合计"]||{};
+  var G=getCols(); G.firstCol="年份";
   var ys=D.annualYears;
-  var head="<thead><tr><th class='date-col'>年份</th>";
-  ANNUAL_COLS.forEach(function(i){ head+="<th>"+i.name+"</th>"; });
-  head+="</tr></thead>";
+  var head="<thead>"+headCells(G)+"</thead>";
   var body="<tbody>";
   ys.forEach(function(y){
-    var row=a[y]||{};
-    body+="<tr><td class='date-col'>"+y+(row.complete?"":"*")+"</td>";
-    ANNUAL_COLS.forEach(function(i){
-      var v=row[i.key];
-      var s=fmt(v,i.type);
-      var sty=(i.type==="pct")?signStyle(v):"";
-      body+="<td"+sty+">"+s+"</td>";
+    body+="<tr><td class='date-col'>"+y+"</td>";
+    G.cols.forEach(function(col){
+      var row=(D.annual[col.country]||{})[y]||{};
+      var v=row[col.key];
+      var sty=(col.key==="balance")?signStyle(v):"";
+      body+="<td"+sty+">"+fmt(v,"num")+"</td>";
     });
     body+="</tr>";
   });
   body+="</tbody>";
   document.getElementById("annualWrap").innerHTML="<table class='data'>"+head+body+"</table>";
-  var lastY=ys[ys.length-1];
-  var lastM=(a[lastY]&&a[lastY].complete)?12:(+D.latestDate.split("-")[1]);
+  var lastM=+D.latestDate.split("-")[1];
   document.getElementById("annualNote").textContent=
-    "全球合计 · 2008–2025 为完整年度；带 * 行为当年不完整年（仅含已公布月份，1–"+lastM+"月）";
+    "列结构与月度表视图一致 · 最新年份 "+ys[ys.length-1]+" 为不完整年（仅含已公布月份，1–"+lastM+"月）";
 }
 
 /* ---------- seasonal（每国一行 3 图：产量/消费量/产消差） ---------- */
@@ -348,12 +340,16 @@ function renderSeasonal(){
 }
 
 /* ---------- orchestration ---------- */
-function renderAll(){
+function renderAllExceptSeasonal(){
   renderMonthly(); renderFilterBar(); renderAnnual();
-  try{ renderSeasonal(); }catch(e){ console.error("seasonal error",e); }
+  var viewName = (curView==="byIndicator") ? "按产量消费（各国产量→消费量→产消差）" : "按国家（每国：产量/消费量/产消差）";
   document.getElementById("monthlySub").textContent=
-    "默认滚动到最新月份，向上滚动可查看更早年份；横向可滚动查看全部国家";
-  document.getElementById("filterSub").textContent="全球合计";
+    "当前视图："+viewName+" · 默认滚动到最新月份，向上滚动可查看更早年份；横向可滚动查看全部国家";
+  document.getElementById("filterSub").textContent="与月度表视图一致（"+viewName+"）";
+}
+function renderAll(){
+  renderAllExceptSeasonal();
+  try{ renderSeasonal(); }catch(e){ console.error("seasonal error",e); }
   document.getElementById("seasonalSub").textContent=
     "每个国家一行（产量 / 消费量 / 产消差） · 横轴为月份 1–12，图例仅显示 2021–2026 年度";
 }
