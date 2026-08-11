@@ -328,7 +328,8 @@ function renderSeasonal(){
   seasonalCharts=[];
   var wrap=document.getElementById("seasonalWrap");
   wrap.innerHTML="";
-  D.countries.forEach(function(c){
+  var cList=["全球合计"].concat(D.countries.filter(function(c){ return c!=="全球合计"; }));
+  cList.forEach(function(c){
     [["prod","产量（万吨）"],["cons","消费量（万吨）"],["exp","出口量（万吨）"],["imp","进口量（万吨）"],["balance","平衡（万吨）"]].forEach(function(pair){
       var key=pair[0], name=pair[1];
       var ser=(D.seasonal[c]||{})[key]||{};
