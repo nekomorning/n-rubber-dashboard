@@ -160,9 +160,11 @@ tr.abn td{background:#fff7f0;}
 .chart.combo{height:340px;}
 .chart.tall{height:380px;}
 .chart.tire{height:340px;}
-/* p6 轮胎进出口：将季节图/组合图卡片高度压缩，与默认折线图对齐，减少下方留白 */
-body.p6 .chart, body.p6 .chart.tall, body.p6 .chart.combo{height:200px;}
-@media (max-width:720px){ .chart.tire{height:300px;} body.p6 .chart, body.p6 .chart.tall, body.p6 .chart.combo{height:185px;} }
+/* p6 轮胎进出口：组合图拉高，说明文字压缩，同一行图表顶底对齐 */
+body.p6 .chart, body.p6 .chart.tall, body.p6 .chart.combo{height:260px;}
+body.p6 .card{padding:12px 14px 4px;}
+body.p6 .card .cap{font-size:10px; line-height:1.25; margin:1px 0 2px;}
+@media (max-width:720px){ .chart.tire{height:300px;} body.p6 .chart, body.p6 .chart.tall, body.p6 .chart.combo{height:220px;} body.p6 .card .cap{font-size:9px;} }
 
 /* 米其林轮胎销量表：可折叠地区明细 */
 .tire-total{cursor:pointer; background:#f8fafc;}
