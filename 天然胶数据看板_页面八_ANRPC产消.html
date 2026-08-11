@@ -29,6 +29,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 .sub-inline{font-size:12px; color:var(--sub); font-weight:400; margin-left:8px;}
 
 .tbl-scroll{overflow:auto; max-height:560px; border:1px solid var(--border); border-radius:8px; margin-top:8px;}
+#monthlyScroll{max-height:420px;}
 table.data{border-collapse:collapse; width:100%; font-size:12px; background:var(--card);}
 table.data th, table.data td{border:1px solid var(--border); padding:4px 6px; text-align:center; white-space:nowrap;}
 table.data thead th{position:sticky; top:0; background:var(--accent); color:#fff; z-index:2; font-weight:600;}
@@ -186,7 +187,17 @@ function renderMonthly(){
   body+="</tbody>";
   document.getElementById("monthlyTable").innerHTML=head+body;
   var sc=document.getElementById("monthlyScroll");
-  sc.scrollTop=sc.scrollHeight;
+  // 默认只显示最新年份（2026 年）：把 2026-01 行对齐到表头下方，向上滚动可查看更早年份
+  var idx=D.months.indexOf("2026-01");
+  if(idx<0){ sc.scrollTop=sc.scrollHeight; }
+  else {
+    sc.scrollTop=0;
+    var target=document.getElementById("monthlyTable").querySelectorAll("tbody tr")[idx];
+    var cTop=sc.getBoundingClientRect().top;
+    var rTop=target.getBoundingClientRect().top;
+    var th=document.getElementById("monthlyTable").querySelector("thead").getBoundingClientRect().height;
+    sc.scrollTop=Math.max(0, rTop - cTop - th);
+  }
 }
 
 /* ---------- filter（跟随视图） ---------- */
@@ -344,7 +355,7 @@ function renderAllExceptSeasonal(){
   renderMonthly(); renderFilterBar(); renderAnnual();
   var viewName = (curView==="byIndicator") ? "按产量消费（各国产量→消费量→产消差）" : "按国家（每国：产量/消费量/产消差）";
   document.getElementById("monthlySub").textContent=
-    "当前视图："+viewName+" · 默认滚动到最新月份，向上滚动可查看更早年份；横向可滚动查看全部国家";
+    "当前视图："+viewName+" · 默认显示 2026 年，向上滚动可查看更早年份；横向可滚动查看全部国家";
   document.getElementById("filterSub").textContent="与月度表视图一致（"+viewName+"）";
 }
 function renderAll(){
