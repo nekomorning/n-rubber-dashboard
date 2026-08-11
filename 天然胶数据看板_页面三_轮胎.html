@@ -160,7 +160,9 @@ tr.abn td{background:#fff7f0;}
 .chart.combo{height:340px;}
 .chart.tall{height:380px;}
 .chart.tire{height:340px;}
-@media (max-width:720px){ .chart.tire{height:300px;} }
+/* p6 轮胎进出口：将季节图/组合图卡片高度压缩，与默认折线图对齐，减少下方留白 */
+body.p6 .chart, body.p6 .chart.tall, body.p6 .chart.combo{height:200px;}
+@media (max-width:720px){ .chart.tire{height:300px;} body.p6 .chart, body.p6 .chart.tall, body.p6 .chart.combo{height:185px;} }
 
 /* 米其林轮胎销量表：可折叠地区明细 */
 .tire-total{cursor:pointer; background:#f8fafc;}
@@ -342,6 +344,7 @@ function chgCls(c){ if(c===null||c===undefined||c===0) return "flat"; return c>0
 function arrow(c){ if(c===null||c===undefined||c===0) return "→"; return c>0?"▲":"▼"; }
 
 function init(){
+  document.body.className = D.pageId || "";
   document.title = "天然胶数据看板 · " + (D.pageTitle||"");
   document.getElementById("latestDate").textContent=D.latestDataDate;
   document.getElementById("pageSub").textContent=D.pageSub||"";
