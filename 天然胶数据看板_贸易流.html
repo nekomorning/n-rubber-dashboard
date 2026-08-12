@@ -774,11 +774,15 @@ function renderChainSeasonal(){
         itemStyle:{color:yearColor(y)}, emphasis:{focus:'series'}, z:isLatest?10:5});
     });
     var inst=echarts.init(div);
+    // 默认隐藏 2016–2020 年折线（图例可点击显示）
+    var hideYears=['2016','2017','2018','2019','2020'];
+    var legendSelected={};
+    legend.forEach(function(y){ legendSelected[y] = (hideYears.indexOf(y)<0); });
     inst.setOption({
       animation:false,
       grid:{left:8, right:12, top:24, bottom:4, containLabel:true},
       legend:{show:true, top:0, itemWidth:14, itemHeight:2, icon:'rect',
-        textStyle:{fontSize:10,color:'#6b7686'}, data:legend},
+        textStyle:{fontSize:10,color:'#6b7686'}, data:legend, selected:legendSelected},
       tooltip:{trigger:'axis', confine:true,
         formatter:function(ps){ if(!ps.length) return ''; var s=months12[ps[0].value[0]]; ps.forEach(function(p){ s+='<br>'+p.marker+p.seriesName+'年： <b>'+fmt(p.value[1],2)+'</b>'; }); return s; }},
       xAxis:{type:'value', min:0, max:11, interval:1,
