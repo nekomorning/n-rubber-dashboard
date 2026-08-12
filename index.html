@@ -269,16 +269,16 @@ table.chain-tbl td.net-neg{color:#C62828; font-weight:600;}
     <div class="row-label" id="chainNote"></div>
     <div class="chain-subjects" id="chainSubjects"></div>
 
-    <!-- 年度累计合计表（顶部，黑字） -->
-    <div class="tablecard">
-      <h2>年度累计合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（* 为未满 12 个月的年份，按截至最新月累计；表头底色：浅绿=合计净出口、浅粉=合计净进口；加总列突出）</span></h2>
-      <div class="tbl-scroll" id="chainAnnualScroll" style="max-height:260px;overflow-y:auto;"><table class="chain-tbl" id="chainAnnualTable"></table></div>
-    </div>
-
     <!-- 月度合计表 -->
     <div class="tablecard">
       <h2>月度合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（向上滚动查看历史月份；正=净出口/净进口，值颜色：正绿负红）</span></h2>
       <div class="tbl-scroll" id="chainMonthlyScroll" style="max-height:340px;overflow-y:auto;"><table class="chain-tbl" id="chainMonthlyTable"></table></div>
+    </div>
+
+    <!-- 年度累计合计表（月度表下方，黑字） -->
+    <div class="tablecard">
+      <h2>年度累计合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（* 为未满 12 个月的年份，按截至最新月累计；表头底色：浅绿=合计净出口、浅粉=合计净进口；加总列突出；数字黑色）</span></h2>
+      <div class="tbl-scroll" id="chainAnnualScroll" style="max-height:260px;overflow-y:auto;"><table class="chain-tbl" id="chainAnnualTable"></table></div>
     </div>
 
     <!-- 切换标签 + 左右两图（净出口国 / 净进口国） -->
