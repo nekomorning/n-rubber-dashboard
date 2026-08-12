@@ -448,6 +448,8 @@ function init(){
   var n=D.years.length;
   D.years.forEach(function(y,i){ yearVisible[y]=(i>=n-4); });
   buildTabs(); buildSubTabs(); buildFilter(); buildTireTypeFilter(); buildOni(); buildSummary(); buildTable(); buildSections(); buildMichelin(); buildSankey(); buildFilterPanel();
+  // 贸易流页默认显示「天胶+轮胎合计」（chain 子页）
+  if(D.pageId==="p5" && window.__CHAIN__){ try{ switchSub("chain"); }catch(e){} }
   var t; window.addEventListener("resize",function(){ clearTimeout(t); t=setTimeout(function(){ allCharts.forEach(function(c){c.resize();}); },150); });
 }
 
