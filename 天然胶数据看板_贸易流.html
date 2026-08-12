@@ -275,6 +275,12 @@ table.chain-tbl td.net-neg{color:#C62828; font-weight:600;}
       <div class="tbl-scroll" id="chainMonthlyScroll" style="max-height:340px;overflow-y:auto;"><table class="chain-tbl" id="chainMonthlyTable"></table></div>
     </div>
 
+    <!-- 月度数据表（年度表上方，新加的第二个月度表） -->
+    <div class="tablecard">
+      <h2>月度数据表（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（向上滚动查看历史月份；正=净出口/净进口，值颜色：正绿负红）</span></h2>
+      <div class="tbl-scroll" id="chainMonthlyScroll2" style="max-height:340px;overflow-y:auto;"><table class="chain-tbl" id="chainMonthlyTable2"></table></div>
+    </div>
+
     <!-- 年度累计合计表（月度表下方，黑字） -->
     <div class="tablecard">
       <h2>年度累计合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（* 为未满 12 个月的年份，按截至最新月累计；表头底色：浅绿=合计净出口、浅粉=合计净进口；加总列突出；数字黑色）</span></h2>
@@ -615,8 +621,8 @@ function renderChainSubjects(){
     return '<span class="csub'+(s===chainSubject?' active':'')+'" onclick="chainSwitchSubject(\''+s+'\')">'+s+'</span>';
   }).join('');
 }
-function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainAnnual(); renderChainCharts(); renderChainSeasonal(); }
-function renderChainMonthly(){
+function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainMonthly2(); renderChainAnnual(); renderChainCharts(); renderChainSeasonal(); }
+function renderChainMonthlyTo(tid, sid){
   var cols=chainCols(), ms=CHAIN.months||[];
   var head='<thead><tr><th class="date-col">日期</th>';
   cols.forEach(function(c){ head+='<th class="'+chainHeadCls(c)+'">'+c+'</th>'; });
@@ -631,9 +637,11 @@ function renderChainMonthly(){
     body+='</tr>';
   });
   body+='</tbody>';
-  var t=document.getElementById('chainMonthlyTable'); if(t) t.innerHTML=head+body;
-  var sc=document.getElementById('chainMonthlyScroll'); if(sc) sc.scrollTop=sc.scrollHeight;
+  var t=document.getElementById(tid); if(t) t.innerHTML=head+body;
+  var sc=document.getElementById(sid); if(sc) sc.scrollTop=sc.scrollHeight;
 }
+function renderChainMonthly(){ renderChainMonthlyTo('chainMonthlyTable','chainMonthlyScroll'); }
+function renderChainMonthly2(){ renderChainMonthlyTo('chainMonthlyTable2','chainMonthlyScroll2'); }
 function chainYSum(col, y){
   var s=0, has=false;
   (CHAIN.months||[]).forEach(function(m){ if(m.slice(0,4)===''+y){ var x=chainVal(col,m); if(x!==null&&x!==undefined){ s+=x; has=true; } } });
@@ -836,8 +844,9 @@ function renderChainPanel(){
   chainSeasonInsts.forEach(function(c){ try{c.dispose();}catch(e){} });
   chainSeasonInsts=[];
   renderChainSubjects();
-  renderChainAnnual();     // 顶部黑字年度表
+  renderChainAnnual();     // 年度表
   renderChainMonthly();
+  renderChainMonthly2();
   renderChainCharts();
   renderChainSeasonal();
   // 切换按钮绑定
