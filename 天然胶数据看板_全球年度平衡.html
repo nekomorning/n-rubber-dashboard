@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天然胶数据看板 · 全球年度平衡</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#ffffff; --border:#e5e9f0; --text:#1f2733; --sub:#6b7686;
+  --up:#d8392b; --down:#1a8a4a; --flat:#8a93a3; --accent:#0f4c81;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:var(--bg); color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif; font-size:14px;}
+.wrap{max-width:1560px; margin:0 auto; padding:18px 22px 60px;}
+.header{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
+.header h1{font-size:24px; color:var(--accent); letter-spacing:1px;}
+.header .date{color:var(--sub); font-size:13px;}
+.tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.tab{padding:7px 20px; border-radius:8px 8px 0 0; border:1px solid var(--border); border-bottom:none;
+  background:#e9edf3; color:var(--sub); cursor:default; font-size:14px; text-decoration:none;}
+.tab.active{background:var(--accent); color:#fff; font-weight:600;}
+a.tab:hover{background:var(--accent); color:#fff;}
+
+.section-title{font-size:18px; color:var(--accent); font-weight:700; margin:26px 0 4px;
+  padding-left:10px; border-left:4px solid var(--accent);}
+.sub-inline{font-size:12px; color:var(--sub); font-weight:400; margin-left:8px;}
+
+.tbl-scroll{overflow:auto; max-height:560px; border:1px solid var(--border); border-radius:8px; margin-top:8px;}
+table.data{border-collapse:collapse; width:100%; font-size:12px; background:var(--card);}
+table.data th, table.data td{border:1px solid var(--border); padding:4px 6px; text-align:center; white-space:nowrap;}
+table.data thead th{position:sticky; top:0; background:var(--accent); color:#fff; z-index:2; font-weight:600;}
+table.data thead tr:nth-child(2) th{top:26px;}
+table.data tbody tr:nth-child(even){background:#fafbfd;}
+table.data td.yr-col, table.data th.yr-col{position:sticky; left:0; background:#eef2f7; font-weight:600; text-align:left; z-index:1;}
+table.data thead th.yr-col{background:var(--accent); z-index:4;}
+table.data thead tr:nth-child(2) th.yr-col{top:0; z-index:5;}
+.val-null{color:var(--flat);}
+td .pos{color:var(--up);} td .neg{color:var(--down);}
+
+.toggle-bar{display:flex; align-items:center; gap:0; margin-top:8px; padding:0;}
+.toggle-btn{padding:6px 22px; border:1px solid var(--border); background:#e9edf3; color:var(--sub);
+  font-size:13px; cursor:pointer; border-radius:6px 0 0 6px;}
+.toggle-btn:last-of-type{border-radius:0 6px 6px 0; border-left:none;}
+.toggle-btn.active{background:var(--accent); color:#fff; font-weight:600;}
+.toggle-btn:not(.active):hover{background:#d7dee8;}
+.toggle-note{font-size:12px; color:var(--sub); margin-left:12px;}
+
+.footer{margin-top:30px; color:var(--sub); font-size:12px; text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1 id="pageTitle">全球年度平衡</h1>
+    <div class="date" id="pageSub"></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+
+  <div class="section-title">年度平衡 · 绝对值<span class="sub-inline" id="mainSub"></span></div>
+  <div class="tbl-scroll" id="mainScroll"><table class="data" id="mainTable"></table></div>
+
+  <div class="section-title">年度平衡 · 增速 / 增量<span class="sub-inline" id="gdSub"></span></div>
+  <div class="toggle-bar">
+    <button class="toggle-btn active" id="btnPct">增速 %</button>
+    <button class="toggle-btn" id="btnDelta">增量（万吨）</button>
+    <span class="toggle-note" id="gdNote"></span>
+  </div>
+  <div class="tbl-scroll" id="gdScroll"><table class="data" id="gdTable"></table></div>
+
+  <div class="footer">天然胶数据看板 · 全球年度平衡 · 数据来源：橡胶各国平衡表 · 单位：万吨 / %</div>
+</div>
+
+<script>
+var D = /*GBAL*/{"pageTitle": "全球年度平衡", "pageSub": "数据来源：橡胶各国平衡表（2026-08-12 版）· 单位：万吨 / 增速 %（天然橡胶，全球年度口径；2026E/2027E 为预测，19-26CAGR 为 2019-2026 复合增速，26-19增量 为 2026E 较 2019 增量）", "unit": "万吨", "groups": [{"label": "产量（万吨）", "cols": [{"key": "B", "name": "全球总产量"}, {"key": "C", "name": "科特迪瓦"}, {"key": "D", "name": "东南亚合计"}, {"key": "E", "name": "泰国"}, {"key": "F", "name": "印尼"}, {"key": "G", "name": "越南"}, {"key": "H", "name": "马来"}, {"key": "I", "name": "柬埔寨"}, {"key": "J", "name": "缅甸"}, {"key": "K", "name": "老挝"}, {"key": "L", "name": "菲律宾"}, {"key": "M", "name": "斯里兰卡"}, {"key": "N", "name": "中国"}, {"key": "O", "name": "印度"}, {"key": "P", "name": "亚洲其他"}]}, {"label": "供需平衡（万吨）", "cols": [{"key": "Q", "name": "供需平衡"}]}, {"label": "全球总需求（万吨）", "cols": [{"key": "R", "name": "全球总需求"}]}, {"label": "消费量（万吨）", "cols": [{"key": "T", "name": "中国"}, {"key": "U", "name": "泰国"}, {"key": "V", "name": "印度"}, {"key": "W", "name": "欧盟"}, {"key": "X", "name": "美国"}, {"key": "Y", "name": "其他国家"}, {"key": "AA", "name": "加拿大"}, {"key": "AB", "name": "日本"}, {"key": "AC", "name": "韩国"}, {"key": "AD", "name": "俄罗斯"}, {"key": "AE", "name": "中国台湾"}, {"key": "AF", "name": "巴西"}, {"key": "AG", "name": "土耳其"}, {"key": "AH", "name": "斯里兰卡"}, {"key": "AI", "name": "东南亚"}, {"key": "AK", "name": "印尼"}, {"key": "AL", "name": "马来"}, {"key": "AM", "name": "柬埔寨"}]}], "mainYears": [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, "2026E", "2027E"], "main": {"2008": {"B": 1009.0, "C": 19.0, "D": 757.0, "E": 309.0, "F": 275.0, "G": 66.0, "H": 107.0, "I": 0.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 55.0, "O": 88.0, "P": 90.0, "Q": 39.0, "R": 970.0, "T": null, "U": null, "V": null, "W": null, "X": null, "Y": null, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2009": {"B": 973.0, "C": 20.0, "D": 721.0, "E": 316.0, "F": 244.0, "G": 72.0, "H": 86.0, "I": 3.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 64.0, "O": 82.0, "P": 86.0, "Q": -27.0, "R": 1000.0, "T": null, "U": null, "V": null, "W": null, "X": null, "Y": null, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2010": {"B": 1070.0, "C": 23.0, "D": 806.0, "E": 359.0, "F": 274.0, "G": 75.0, "H": 94.0, "I": 4.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 69.0, "O": 85.0, "P": 87.0, "Q": -10.0, "R": 1080.0, "T": null, "U": null, "V": null, "W": null, "X": null, "Y": null, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2011": {"B": 1150.0, "C": 23.0, "D": 875.0, "E": 392.0, "F": 299.0, "G": 79.0, "H": 100.0, "I": 5.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 73.0, "O": 89.0, "P": 90.0, "Q": 30.0, "R": 1120.0, "T": null, "U": null, "V": null, "W": null, "X": null, "Y": null, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2012": {"B": 1166.0, "C": 25.0, "D": 865.0, "E": 378.0, "F": 301.0, "G": 88.0, "H": 92.0, "I": 6.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 80.0, "O": 92.0, "P": 104.0, "Q": 51.0, "R": 1115.0, "T": 389.0, "U": 51.0, "V": 99.0, "W": 108.0, "X": 95.0, "Y": 373.0, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2013": {"B": 1228.0, "C": 29.0, "D": 928.0, "E": 417.0, "F": 324.0, "G": 95.0, "H": 83.0, "I": 9.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 87.0, "O": 80.0, "P": 104.0, "Q": 77.0, "R": 1151.0, "T": 427.0, "U": 52.0, "V": 96.0, "W": 106.0, "X": 91.0, "Y": 379.0, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2014": {"B": 1214.0, "C": 32.0, "D": 919.0, "E": 432.0, "F": 315.0, "G": 95.0, "H": 67.0, "I": 10.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 84.0, "O": 70.0, "P": 109.0, "Q": -9.0, "R": 1223.0, "T": 480.0, "U": 54.0, "V": 101.0, "W": 114.0, "X": 93.0, "Y": 381.0, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2015": {"B": 1226.0, "C": 35.0, "D": 948.0, "E": 447.0, "F": 315.0, "G": 101.0, "H": 72.0, "I": 13.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 79.0, "O": 58.0, "P": 106.0, "Q": 10.0, "R": 1216.0, "T": 468.0, "U": 60.0, "V": 99.0, "W": 116.0, "X": 94.0, "Y": 379.0, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "2016": {"B": 1250.0, "C": 47.0, "D": 957.0, "E": 435.0, "F": 336.0, "G": 104.0, "H": 67.0, "I": 15.0, "J": 0.0, "K": null, "L": null, "M": null, "N": 77.0, "O": 62.0, "P": 107.0, "Q": -23.0, "R": 1273.0, "T": 502.0, "U": 65.0, "V": 103.0, "W": 119.0, "X": 93.0, "Y": 391.0, "AA": 11.9, "AB": 67.6, "AC": 38.1, "AD": 10.6, "AE": 10.1, "AF": 41.2, "AG": 15.7, "AH": 14.2, "AI": 191.7, "AK": 58.7, "AL": 48.6, "AM": null}, "2017": {"B": 1338.0, "C": 60.0, "D": 1056.3, "E": 443.0, "F": 368.0, "G": 109.0, "H": 74.0, "I": 19.0, "J": 17.0, "K": 7.8, "L": 10.2, "M": 8.3, "N": 80.0, "O": 71.0, "P": 70.7, "Q": 3.0, "R": 1335.0, "T": 539.0, "U": 65.0, "V": 108.0, "W": 124.0, "X": 96.0, "Y": 403.0, "AA": 12.6, "AB": 67.9, "AC": 38.4, "AD": 11.8, "AE": 11.0, "AF": 39.5, "AG": 17.6, "AH": 12.8, "AI": 196.2, "AK": 60.8, "AL": 48.9, "AM": null}, "2018": {"B": 1373.0, "C": 62.0, "D": 1110.9, "E": 497.0, "F": 363.0, "G": 114.0, "H": 60.0, "I": 22.0, "J": 23.0, "K": 13.2, "L": 10.6, "M": 8.1, "N": 82.0, "O": 66.0, "P": 52.1, "Q": -16.0, "R": 1389.0, "T": 569.0, "U": 63.0, "V": 122.0, "W": 123.0, "X": 99.0, "Y": 413.0, "AA": 13.9, "AB": 70.6, "AC": 36.7, "AD": 12.5, "AE": 9.7, "AF": 39.8, "AG": 20.0, "AH": 13.5, "AI": 201.2, "AK": 61.8, "AL": 51.5, "AM": 2.3}, "2019": {"B": 1388.0, "C": 82.0, "D": 1088.5, "E": 485.0, "F": 330.0, "G": 118.0, "H": 64.0, "I": 29.0, "J": 26.0, "K": 18.2, "L": 10.8, "M": 7.5, "N": 81.0, "O": 70.0, "P": 66.5, "Q": -3.0, "R": 1391.0, "T": 567.0, "U": 77.0, "V": 114.0, "W": 119.0, "X": 100.0, "Y": 414.0, "AA": 14.0, "AB": 71.4, "AC": 35.4, "AD": 12.7, "AE": 9.8, "AF": 40.1, "AG": 19.9, "AH": 11.3, "AI": 215.6, "AK": 62.5, "AL": 50.1, "AM": 2.0}, "2020": {"B": 1368.0, "C": 95.0, "D": 1064.6, "E": 486.0, "F": 304.0, "G": 123.0, "H": 51.0, "I": 35.0, "J": 27.0, "K": 20.2, "L": 10.6, "M": 7.8, "N": 69.0, "O": 69.0, "P": 70.4, "Q": 64.0, "R": 1304.0, "T": 565.0, "U": 69.0, "V": 104.0, "W": 103.0, "X": 80.0, "Y": 383.0, "AA": 10.1, "AB": 58.0, "AC": 29.8, "AD": 11.2, "AE": 9.3, "AF": 34.5, "AG": 20.0, "AH": 11.2, "AI": 203.9, "AK": 57.3, "AL": 51.7, "AM": 1.9}, "2021": {"B": 1440.0, "C": 105.0, "D": 1081.6, "E": 489.0, "F": 305.0, "G": 127.0, "H": 47.0, "I": 37.0, "J": 29.0, "K": 22.6, "L": 17.3, "M": 7.7, "N": 87.0, "O": 76.0, "P": 90.4, "Q": -22.0, "R": 1462.0, "T": 606.0, "U": 93.0, "V": 126.0, "W": 117.0, "X": 96.0, "Y": 424.0, "AA": 13.0, "AB": 67.8, "AC": 33.9, "AD": 12.6, "AE": 8.7, "AF": 41.8, "AG": 25.6, "AH": 13.4, "AI": 236.7, "AK": 58.5, "AL": 50.2, "AM": 2.0}, "2022": {"B": 1460.0, "C": 129.0, "D": 1044.9, "E": 479.0, "F": 272.0, "G": 134.0, "H": 38.0, "I": 38.0, "J": 30.0, "K": 28.8, "L": 18.0, "M": 7.1, "N": 86.0, "O": 83.0, "P": 117.1, "Q": -43.0, "R": 1503.0, "T": 641.0, "U": 104.0, "V": 133.0, "W": 115.0, "X": 100.0, "Y": 410.0, "AA": 13.3, "AB": 68.1, "AC": 37.4, "AD": 6.7, "AE": 7.8, "AF": 40.9, "AG": 27.8, "AH": 11.7, "AI": 257.2, "AK": 60.5, "AL": 42.4, "AM": 2.1}, "2023": {"B": 1435.0, "C": 155.0, "D": 1008.0, "E": 481.0, "F": 224.0, "G": 127.0, "H": 35.0, "I": 39.0, "J": 45.0, "K": 31.7, "L": 18.9, "M": 6.4, "N": 83.0, "O": 85.0, "P": 104.0, "Q": -61.0, "R": 1496.0, "T": 676.0, "U": 123.0, "V": 141.0, "W": 109.0, "X": 82.0, "Y": 365.0, "AA": 10.6, "AB": 66.2, "AC": 27.3, "AD": 6.1, "AE": 6.3, "AF": 35.2, "AG": 23.9, "AH": 9.2, "AI": 253.3, "AK": 58.5, "AL": 31.0, "AM": 2.1}, "2024": {"B": 1470.0, "C": 180.0, "D": 1017.1, "E": 479.0, "F": 213.0, "G": 130.0, "H": 39.0, "I": 41.0, "J": 47.0, "K": 42.0, "L": 19.7, "M": 6.4, "N": 88.0, "O": 88.0, "P": 96.9, "Q": -58.0, "R": 1528.0, "T": 687.0, "U": 120.0, "V": 140.0, "W": 120.0, "X": 86.0, "Y": 375.0, "AA": 11.6, "AB": 63.6, "AC": 29.3, "AD": 8.8, "AE": 6.8, "AF": 40.5, "AG": 24.1, "AH": 13.8, "AI": 255.4, "AK": 59.0, "AL": 35.0, "AM": 1.9}, "2025": {"B": 1497.0, "C": 199.0, "D": 1009.9, "E": 476.0, "F": 204.0, "G": 135.0, "H": 34.0, "I": 43.0, "J": 49.0, "K": 42.0, "L": 20.5, "M": 6.4, "N": 93.0, "O": 96.0, "P": 99.1, "Q": -38.0, "R": 1535.0, "T": 696.0, "U": 119.0, "V": 144.0, "W": 110.0, "X": 83.0, "Y": 383.0, "AA": 11.6, "AB": 66.0, "AC": 29.3, "AD": 8.8, "AE": 6.8, "AF": 40.5, "AG": 24.1, "AH": 13.8, "AI": 271.9, "AK": 59.0, "AL": 35.0, "AM": 3.9}, "2026E": {"B": 1515.0, "C": 206.0, "D": 1016.9, "E": 483.0, "F": 199.0, "G": 136.0, "H": 32.0, "I": 44.0, "J": 51.0, "K": 45.0, "L": 20.5, "M": 6.4, "N": 95.0, "O": 92.0, "P": 105.1, "Q": -47.0, "R": 1562.0, "T": 713.0, "U": 120.0, "V": 148.0, "W": 111.0, "X": 80.0, "Y": 390.0, "AA": 12.0, "AB": 64.0, "AC": 23.0, "AD": 9.0, "AE": 7.0, "AF": 41.0, "AG": 24.1, "AH": 14.0, "AI": 282.5, "AK": 62.0, "AL": 35.0, "AM": 5.5}, "2027E": {"B": 1528.0, "C": 211.0, "D": 1015.9, "E": 481.0, "F": 194.0, "G": 137.0, "H": 31.0, "I": 46.0, "J": 53.0, "K": 47.0, "L": 20.5, "M": 6.4, "N": 96.0, "O": 97.0, "P": 108.1, "Q": -63.0, "R": 1591.0, "T": 731.0, "U": 121.0, "V": 152.0, "W": 112.0, "X": 79.0, "Y": 396.0, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}}, "growthYears": [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, "2026E", "2027E", "19-26CAGR"], "growth": {"2017": {"B": null, "C": null, "D": null, "E": null, "F": null, "G": null, "H": null, "I": null, "J": null, "K": null, "L": null, "M": null, "N": null, "O": null, "P": null, "Q": null, "R": 4.9, "T": 7.4, "U": 0.0, "V": 4.9, "W": 4.2, "X": 3.2, "Y": null, "AA": 5.7, "AB": 0.4, "AC": 0.8, "AD": 11.3, "AE": 8.1, "AF": -4.2, "AG": 12.2, "AH": -9.8, "AI": 2.3, "AK": 3.5, "AL": 0.5, "AM": null}, "2018": {"B": 2.6, "C": 3.3, "D": 5.2, "E": 12.2, "F": -1.4, "G": 4.6, "H": -18.9, "I": 15.8, "J": 35.3, "K": 69.2, "L": 3.9, "M": -2.4, "N": 2.5, "O": -7.0, "P": -26.3, "Q": null, "R": 4.0, "T": 5.6, "U": -3.1, "V": 13.0, "W": -0.8, "X": 3.1, "Y": null, "AA": 11.1, "AB": 4.0, "AC": -4.5, "AD": 6.4, "AE": -11.7, "AF": 0.8, "AG": 13.8, "AH": 5.5, "AI": 2.5, "AK": 1.8, "AL": 5.5, "AM": null}, "2019": {"B": 1.1, "C": 32.3, "D": -2.0, "E": -2.4, "F": -9.1, "G": 3.5, "H": 6.7, "I": 31.8, "J": 13.0, "K": 37.9, "L": 1.9, "M": -7.4, "N": -1.2, "O": 6.1, "P": 27.6, "Q": null, "R": 0.1, "T": -0.4, "U": 22.2, "V": -6.6, "W": -3.3, "X": 1.0, "Y": null, "AA": 0.6, "AB": 1.1, "AC": -3.5, "AD": 1.2, "AE": 1.8, "AF": 0.9, "AG": -0.9, "AH": -16.7, "AI": 7.2, "AK": 1.1, "AL": -2.7, "AM": -13.6}, "2020": {"B": -1.4, "C": 15.9, "D": -2.2, "E": 0.2, "F": -7.9, "G": 4.2, "H": -20.3, "I": 20.7, "J": 3.8, "K": 11.0, "L": -1.9, "M": 4.0, "N": -14.8, "O": -1.4, "P": 5.9, "Q": null, "R": -6.3, "T": -0.4, "U": -10.4, "V": -8.8, "W": -13.4, "X": -20.0, "Y": null, "AA": -27.7, "AB": -18.7, "AC": -16.0, "AD": -11.3, "AE": -5.5, "AF": -14.1, "AG": 0.8, "AH": -0.5, "AI": -5.4, "AK": -8.3, "AL": 3.1, "AM": -1.0}, "2021": {"B": 5.3, "C": 10.5, "D": 1.6, "E": 0.6, "F": 0.3, "G": 3.3, "H": -7.8, "I": 5.7, "J": 7.4, "K": 11.9, "L": 63.2, "M": -1.3, "N": 26.1, "O": 10.1, "P": 28.4, "Q": null, "R": 12.1, "T": 7.3, "U": 34.8, "V": 21.2, "W": 13.6, "X": 20.0, "Y": null, "AA": 28.1, "AB": 16.8, "AC": 14.1, "AD": 12.2, "AE": -6.1, "AF": 21.1, "AG": 28.2, "AH": 19.6, "AI": 16.1, "AK": 2.1, "AL": -3.0, "AM": 5.1}, "2022": {"B": 1.4, "C": 22.9, "D": -3.4, "E": -2.0, "F": -10.8, "G": 5.5, "H": -19.1, "I": 2.7, "J": 3.4, "K": 27.4, "L": 4.0, "M": -7.8, "N": -1.1, "O": 9.2, "P": 29.5, "Q": null, "R": 2.8, "T": 5.8, "U": 11.8, "V": 5.6, "W": -1.7, "X": 4.2, "Y": null, "AA": 2.2, "AB": 0.5, "AC": 10.3, "AD": -47.2, "AE": -10.9, "AF": -2.1, "AG": 8.5, "AH": -12.4, "AI": 8.7, "AK": 3.3, "AL": -15.4, "AM": 0.5}, "2023": {"B": -1.7, "C": 20.2, "D": -3.5, "E": 0.4, "F": -17.6, "G": -5.2, "H": -7.9, "I": 2.6, "J": 50.0, "K": 10.1, "L": 5.0, "M": -9.9, "N": -3.5, "O": 2.4, "P": -11.2, "Q": null, "R": -0.5, "T": 5.5, "U": 18.3, "V": 6.0, "W": -5.2, "X": -18.0, "Y": null, "AA": -20.1, "AB": -2.8, "AC": -26.9, "AD": -8.9, "AE": -19.5, "AF": -13.8, "AG": -14.2, "AH": -21.7, "AI": -1.5, "AK": -3.1, "AL": -27.0, "AM": 3.9}, "2024": {"B": 2.4, "C": 16.1, "D": 0.9, "E": -0.4, "F": -4.9, "G": 2.4, "H": 11.4, "I": 5.1, "J": 4.4, "K": 32.5, "L": 4.2, "M": 0.0, "N": 6.0, "O": 3.5, "P": -6.8, "Q": null, "R": 2.1, "T": 1.6, "U": -2.4, "V": -0.7, "W": 10.1, "X": 4.9, "Y": 2.7, "AA": 9.7, "AB": -3.9, "AC": 7.1, "AD": 44.9, "AE": 8.1, "AF": 14.9, "AG": 1.0, "AH": 49.7, "AI": 0.9, "AK": 0.8, "AL": 13.0, "AM": -9.3}, "2025": {"B": 1.8, "C": 10.6, "D": -0.7, "E": -0.6, "F": -4.2, "G": 3.8, "H": -12.8, "I": 4.9, "J": 4.3, "K": 0.0, "L": 4.1, "M": 0.0, "N": 5.7, "O": 9.1, "P": 2.3, "Q": null, "R": 0.5, "T": 1.3, "U": -0.8, "V": 2.9, "W": -8.3, "X": -3.5, "Y": 2.1, "AA": 0.0, "AB": 3.8, "AC": 0.0, "AD": 0.0, "AE": 0.0, "AF": 0.0, "AG": 0.0, "AH": 0.0, "AI": 6.4, "AK": 0.0, "AL": 0.0, "AM": 101.0}, "2026E": {"B": 1.2, "C": 3.5, "D": 0.7, "E": 1.5, "F": -2.5, "G": 0.7, "H": -5.9, "I": 2.3, "J": 4.1, "K": 7.1, "L": 0.0, "M": 0.0, "N": 2.2, "O": -4.2, "P": 6.1, "Q": null, "R": 1.8, "T": 2.4, "U": 0.8, "V": 2.8, "W": 0.9, "X": -3.6, "Y": 1.8, "AA": 3.1, "AB": -3.0, "AC": -21.5, "AD": 2.5, "AE": 3.2, "AF": 1.3, "AG": -0.1, "AH": 1.7, "AI": 3.9, "AK": 5.1, "AL": 0.0, "AM": 41.0}, "2027E": {"B": 0.9, "C": 2.4, "D": -0.1, "E": -0.4, "F": -2.5, "G": 0.7, "H": -3.1, "I": 4.5, "J": 3.9, "K": 4.4, "L": 0.0, "M": 0.0, "N": 1.1, "O": 5.4, "P": 2.9, "Q": null, "R": 1.9, "T": 2.5, "U": 0.8, "V": 2.7, "W": 0.9, "X": -1.2, "Y": 1.5, "AA": null, "AB": null, "AC": null, "AD": null, "AE": null, "AF": null, "AG": null, "AH": null, "AI": null, "AK": null, "AL": null, "AM": null}, "19-26CAGR": {"B": 1.3, "C": 14.1, "D": -1.0, "E": -0.1, "F": -7.0, "G": 2.0, "H": -9.4, "I": 6.1, "J": 10.1, "K": 13.8, "L": 9.6, "M": -2.2, "N": 2.3, "O": 4.0, "P": 6.8, "Q": null, "R": 1.7, "T": 3.3, "U": 6.5, "V": 3.8, "W": -1.0, "X": -3.1, "Y": -0.8, "AA": -2.2, "AB": -1.6, "AC": -6.0, "AD": -4.7, "AE": -5.5, "AF": 0.5, "AG": 4.0, "AH": 1.1, "AI": 3.9, "AK": -0.1, "AL": -5.0, "AM": 15.8}}, "deltaYears": [2019, 2020, 2021, 2022, 2023, 2024, 2025, "2026E", "2027E", "26-19增量"], "delta": {"2019": {"B": 15.0, "C": 20.0, "D": -22.4, "E": -12.0, "F": -33.0, "G": 4.0, "H": 4.0, "I": 7.0, "J": 3.0, "K": 5.0, "L": 0.2, "M": -0.6, "N": -1.0, "O": 4.0, "P": 14.4, "Q": 13.0, "R": 2.0, "T": -2.0, "U": 14.0, "V": -8.0, "W": -4.0, "X": 1.0, "Y": 1.0, "AA": 0.1, "AB": 0.8, "AC": -1.3, "AD": 0.2, "AE": 0.2, "AF": 0.4, "AG": -0.2, "AH": -2.3, "AI": 14.5, "AK": 0.7, "AL": -1.4, "AM": -0.3}, "2020": {"B": -20.0, "C": 13.0, "D": -23.9, "E": 1.0, "F": -26.0, "G": 5.0, "H": -13.0, "I": 6.0, "J": 1.0, "K": 2.0, "L": -0.2, "M": 0.3, "N": -12.0, "O": -1.0, "P": 3.9, "Q": 67.0, "R": -87.0, "T": -2.0, "U": -8.0, "V": -10.0, "W": -16.0, "X": -20.0, "Y": -31.0, "AA": -3.9, "AB": -13.4, "AC": -5.7, "AD": -1.4, "AE": -0.5, "AF": -5.7, "AG": 0.1, "AH": -0.1, "AI": -11.7, "AK": -5.2, "AL": 1.6, "AM": -0.0}, "2021": {"B": 72.0, "C": 10.0, "D": 17.0, "E": 3.0, "F": 1.0, "G": 4.0, "H": -4.0, "I": 2.0, "J": 2.0, "K": 2.4, "L": 6.7, "M": -0.1, "N": 18.0, "O": 7.0, "P": 20.0, "Q": -86.0, "R": 158.0, "T": 41.0, "U": 24.0, "V": 22.0, "W": 14.0, "X": 16.0, "Y": 41.0, "AA": 2.8, "AB": 9.7, "AC": 4.2, "AD": 1.4, "AE": -0.6, "AF": 7.3, "AG": 5.6, "AH": 2.2, "AI": 32.8, "AK": 1.2, "AL": -1.5, "AM": 0.1}, "2022": {"B": 20.0, "C": 24.0, "D": -36.7, "E": -10.0, "F": -33.0, "G": 7.0, "H": -9.0, "I": 1.0, "J": 1.0, "K": 6.2, "L": 0.7, "M": -0.6, "N": -1.0, "O": 7.0, "P": 26.7, "Q": -21.0, "R": 41.0, "T": 35.0, "U": 11.0, "V": 7.0, "W": -2.0, "X": 4.0, "Y": -14.0, "AA": 0.3, "AB": 0.3, "AC": 3.5, "AD": -5.9, "AE": -1.0, "AF": -0.9, "AG": 2.2, "AH": -1.7, "AI": 20.5, "AK": 2.0, "AL": -7.7, "AM": 0.0}, "2023": {"B": -25.0, "C": 26.0, "D": -36.9, "E": 2.0, "F": -48.0, "G": -7.0, "H": -3.0, "I": 1.0, "J": 15.0, "K": 2.9, "L": 0.9, "M": -0.7, "N": -3.0, "O": 2.0, "P": -13.1, "Q": -18.0, "R": -7.0, "T": 35.0, "U": 19.0, "V": 8.0, "W": -6.0, "X": -18.0, "Y": -45.0, "AA": -2.7, "AB": -1.9, "AC": -10.1, "AD": -0.6, "AE": -1.5, "AF": -5.6, "AG": -3.9, "AH": -2.5, "AI": -4.0, "AK": -1.9, "AL": -11.5, "AM": 0.1}, "2024": {"B": 35.0, "C": 25.0, "D": 9.1, "E": -2.0, "F": -11.0, "G": 3.0, "H": 4.0, "I": 2.0, "J": 2.0, "K": 10.3, "L": 0.8, "M": 0.0, "N": 5.0, "O": 3.0, "P": -7.1, "Q": 3.0, "R": 32.0, "T": 11.0, "U": -3.0, "V": -1.0, "W": 11.0, "X": 4.0, "Y": 10.0, "AA": 1.0, "AB": -2.6, "AC": 1.9, "AD": 2.7, "AE": 0.5, "AF": 5.2, "AG": 0.2, "AH": 4.6, "AI": 2.2, "AK": 0.5, "AL": 4.0, "AM": -0.2}, "2025": {"B": 27.0, "C": 19.0, "D": -7.2, "E": -3.0, "F": -9.0, "G": 5.0, "H": -5.0, "I": 2.0, "J": 2.0, "K": 0.0, "L": 0.8, "M": 0.0, "N": 5.0, "O": 8.0, "P": 2.2, "Q": 20.0, "R": 7.0, "T": 9.0, "U": -1.0, "V": 4.0, "W": -10.0, "X": -3.0, "Y": 8.0, "AA": 0.0, "AB": 2.4, "AC": 0.0, "AD": 0.0, "AE": 0.0, "AF": 0.0, "AG": 0.0, "AH": 0.0, "AI": 16.5, "AK": 0.0, "AL": 0.0, "AM": 2.0}, "2026E": {"B": 18.0, "C": 7.0, "D": 7.0, "E": 7.0, "F": -5.0, "G": 1.0, "H": -2.0, "I": 1.0, "J": 2.0, "K": 3.0, "L": 0.0, "M": 0.0, "N": 2.0, "O": -4.0, "P": 6.0, "Q": -9.0, "R": 27.0, "T": 17.0, "U": 1.0, "V": 4.0, "W": 1.0, "X": -3.0, "Y": 7.0, "AA": 0.4, "AB": -2.0, "AC": -6.3, "AD": 0.2, "AE": 0.2, "AF": 0.5, "AG": -0.0, "AH": 0.2, "AI": 10.6, "AK": 3.0, "AL": 0.0, "AM": 1.6}, "2027E": {"B": 13.0, "C": 5.0, "D": -1.0, "E": -2.0, "F": -5.0, "G": 1.0, "H": -1.0, "I": 2.0, "J": 2.0, "K": 2.0, "L": 0.0, "M": 0.0, "N": 1.0, "O": 5.0, "P": 3.0, "Q": -16.0, "R": 29.0, "T": 18.0, "U": 1.0, "V": 4.0, "W": 1.0, "X": -1.0, "Y": 6.0, "AA": -12.0, "AB": -64.0, "AC": -23.0, "AD": -9.0, "AE": -7.0, "AF": -41.0, "AG": -24.1, "AH": -14.0, "AI": -282.5, "AK": -62.0, "AL": -35.0, "AM": -5.5}, "26-19增量": {"B": 127.0, "C": 124.0, "D": -71.6, "E": -2.0, "F": -131.0, "G": 18.0, "H": -32.0, "I": 15.0, "J": 25.0, "K": 26.8, "L": 9.7, "M": -1.1, "N": 14.0, "O": 22.0, "P": 38.6, "Q": -44.0, "R": 171.0, "T": 146.0, "U": 43.0, "V": 34.0, "W": -8.0, "X": -20.0, "Y": -24.0, "AA": -2.0, "AB": -7.4, "AC": -12.4, "AD": -3.7, "AE": -2.8, "AF": 0.9, "AG": 4.2, "AH": 2.7, "AI": 66.9, "AK": -0.5, "AL": -15.1, "AM": 3.5}}}/*GBAL_END*/;
+var view = "pct";  // pct | delta
+
+/* 红涨绿跌 */
+function signColor(v){
+  if(v===null||v===undefined) return "";
+  if(v>0) return "#d8392b";
+  if(v<0) return "#1a8a4a";
+  return "";
+}
+function signStyle(v){ var c=signColor(v); return c?(" style='color:"+c+"'"):""; }
+function fmt(v, isPct){
+  if(v===null||v===undefined) return "";
+  if(isPct) return v.toFixed(1)+"%";
+  return Number(v).toLocaleString("zh-CN",{maximumFractionDigits:1});
+}
+function fmtPct(v){ return fmt(v, true); }
+
+/* ---------- TABS（10 标签，本页在天气数据与 ANRPC平衡表之间） ---------- */
+function buildTabs(){
+  var TABS=[
+    {id:"ypt",label:"一页通",file:"天然胶数据看板_一页通.html"},
+    {id:"p1",label:"日度价格",file:"天然胶数据看板_页面一_日度价格.html"},
+    {id:"p2",label:"天胶库存",file:"天然胶数据看板_页面二_库存.html"},
+    {id:"p3",label:"下游轮胎",file:"天然胶数据看板_页面三_轮胎.html"},
+    {id:"p7",label:"重卡",file:"天然胶数据看板_页面七_重卡.html"},
+    {id:"p4",label:"天气数据",file:"天然胶数据看板_页面四_天气数据.html"},
+    {id:"gbal",label:"全球年度平衡",file:"天然胶数据看板_全球年度平衡.html"},
+    {id:"p8",label:"ANRPC平衡表",file:"天然胶数据看板_页面八_ANRPC产消.html"},
+    {id:"p5",label:"天然橡胶进出口",file:"天然胶数据看板_页面五_天然橡胶进口.html"},
+    {id:"p6",label:"轮胎进出口",file:"天然胶数据看板_页面六_轮胎进出口.html"}
+  ];
+  var bar=document.getElementById("tabs");
+  TABS.forEach(function(tb){
+    if(tb.id==="gbal"){ var s=document.createElement("span"); s.className="tab active"; s.textContent=tb.label; bar.appendChild(s); }
+    else { var a=document.createElement("a"); a.className="tab"; a.href=tb.file; a.textContent=tb.label; bar.appendChild(a); }
+  });
+}
+
+/* ---------- 表头（两级：分组行 + 列名行） ---------- */
+function headCells(firstCol){
+  var h="<tr><th class='yr-col' rowspan='2'>"+firstCol+"</th>";
+  D.groups.forEach(function(g){
+    h+="<th colspan='"+g.cols.length+"' style='background:"+gColor(g.label)+";color:#fff;'>"+g.label+"</th>";
+  });
+  h+="</tr><tr>";
+  D.groups.forEach(function(g){
+    g.cols.forEach(function(c){ h+="<th style='background:"+gColor(g.label)+";color:#fff;'>"+c.name+"</th>"; });
+  });
+  return h+"</tr>";
+}
+function gColor(label){
+  if(label.indexOf("产量")>=0) return "#6E8FB3";      // 雾蓝
+  if(label.indexOf("供需平衡")>=0) return "#5F7A8C";   // 石蓝灰
+  if(label.indexOf("总需求")>=0) return "#C2936A";    // 暖杏橙
+  if(label.indexOf("消费")>=0) return "#7FA996";       // 鼠尾草绿
+  return "#0f4c81";
+}
+
+/* ---------- 主表：绝对值（万吨） ---------- */
+function renderMain(){
+  var head="<thead>"+headCells("年份")+"</thead>";
+  var body="<tbody>";
+  D.mainYears.forEach(function(y){
+    body+="<tr><td class='yr-col'>"+y+"</td>";
+    D.groups.forEach(function(g){
+      g.cols.forEach(function(c){
+        var v=D.main[y][c.key];
+        body+="<td"+signStyle(v)+">"+fmt(v,false)+"</td>";
+      });
+    });
+    body+="</tr>";
+  });
+  body+="</tbody>";
+  document.getElementById("mainTable").innerHTML=head+body;
+  document.getElementById("mainSub").textContent=
+    "全球及细分国家年度产量 / 消费量（万吨）· "+D.mainYears[0]+" ~ "+D.mainYears[D.mainYears.length-1]+"（E 为预测）";
+}
+
+/* ---------- 增速 / 增量表（标签切换） ---------- */
+function renderGd(){
+  var isPct = view==="pct";
+  var years = isPct ? D.growthYears : D.deltaYears;
+  var block = isPct ? D.growth : D.delta;
+  var head="<thead>"+headCells(isPct?"年份":"年份")+"</thead>";
+  var body="<tbody>";
+  years.forEach(function(y){
+    body+="<tr><td class='yr-col'>"+y+"</td>";
+    D.groups.forEach(function(g){
+      g.cols.forEach(function(c){
+        var v=block[y][c.key];
+        body+="<td"+signStyle(v)+">"+fmt(v,isPct)+"</td>";
+      });
+    });
+    body+="</tr>";
+  });
+  body+="</tbody>";
+  document.getElementById("gdTable").innerHTML=head+body;
+  document.getElementById("gdNote").textContent = isPct
+    ? "增速为同比变化（%），红涨绿跌；—— 为底稿未给出增速（无预测）"
+    : "增量为当年较上年绝对变化（万吨）；26-19增量 为 2026E 较 2019 增量";
+  document.getElementById("btnPct").classList.toggle("active", isPct);
+  document.getElementById("btnDelta").classList.toggle("active", !isPct);
+}
+
+function init(){
+  if(!D||!D.main){ document.body.insertAdjacentHTML("afterbegin","<div style='padding:20px;color:#c00'>数据未加载</div>"); return; }
+  document.getElementById("pageTitle").textContent=D.pageTitle;
+  document.getElementById("pageSub").textContent=D.pageSub;
+  buildTabs();
+  renderMain();
+  renderGd();
+  document.getElementById("btnPct").onclick=function(){ view="pct"; renderGd(); };
+  document.getElementById("btnDelta").onclick=function(){ view="delta"; renderGd(); };
+}
+init();
+</script>
+</body>
+</html>
