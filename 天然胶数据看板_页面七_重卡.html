@@ -733,11 +733,42 @@ function chainToggleMode(mode){
 }
 
 // 各国/地区月度季节图（grid c4）
-var CHAIN_SEASON_SUBJECTS = ['东南亚合计','泰国','印尼','越南','科特迪瓦','净进口合计','中国','韩国','日本','印度','欧美合计','美国','欧盟'];
+var CHAIN_SEASON_SUBJECTS = [
+  '东南亚天胶+轮胎合计出口',
+  '泰国天胶+轮胎合计出口',
+  '印尼天胶+轮胎合计出口',
+  '越南天胶+轮胎合计出口',
+  '科特迪瓦天胶+轮胎合计出口',
+  '各国天胶+轮胎净进口合计',
+  '中国天胶净进口-轮胎净出口',
+  '韩国天胶净进口-轮胎净出口',
+  '日本天胶净进口-轮胎净出口',
+  '印度天胶净进口-轮胎净出口',
+  '欧美天胶+轮胎合计净进口',
+  '美国天胶+轮胎合计净进口',
+  '欧盟天胶+轮胎合计净进口'
+];
+// 标题 → 数据 key 映射（季节图显示名 ≠ 数据 key）
+var TITLE_TO_KEY = {
+  '东南亚天胶+轮胎合计出口':'东南亚合计',
+  '泰国天胶+轮胎合计出口':'泰国',
+  '印尼天胶+轮胎合计出口':'印尼',
+  '越南天胶+轮胎合计出口':'越南',
+  '科特迪瓦天胶+轮胎合计出口':'科特迪瓦',
+  '各国天胶+轮胎净进口合计':'净进口合计',
+  '中国天胶净进口-轮胎净出口':'中国',
+  '韩国天胶净进口-轮胎净出口':'韩国',
+  '日本天胶净进口-轮胎净出口':'日本',
+  '印度天胶净进口-轮胎净出口':'印度',
+  '欧美天胶+轮胎合计净进口':'欧美合计',
+  '美国天胶+轮胎合计净进口':'美国',
+  '欧盟天胶+轮胎合计净进口':'欧盟'
+};
 function chainValBySubject(subj, m){
   if(!CHAIN) return null;
-  if(CHAIN.totalCols.indexOf(subj)>=0){ return (CHAIN.total[subj]||{})[m]; }
-  var s=(CHAIN.net[subj]||{})['合计'];
+  var key=TITLE_TO_KEY[subj]||subj;
+  if(CHAIN.totalCols.indexOf(key)>=0){ return (CHAIN.total[key]||{})[m]; }
+  var s=(CHAIN.net[key]||{})['合计'];
   return s ? s[m] : null;
 }
 function renderChainSeasonal(){
