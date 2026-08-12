@@ -223,6 +223,13 @@ body.p6 .card .cap{font-size:10px; line-height:1.25; margin:1px 0 2px;}
 .csub{display:inline-block;padding:4px 14px;margin-right:8px;border:1px solid var(--border);border-radius:14px;cursor:pointer;font-size:13px;background:#fff;color:var(--sub);user-select:none;}
 .csub:hover{border-color:var(--accent);color:var(--accent);}
 .csub.active{background:var(--accent);color:#fff;font-weight:600;border-color:var(--accent);}
+/* chain 切换标签（月度图 / 年度图） */
+.chain-toggle{display:flex; gap:6px; margin:14px 0 8px;}
+.chain-toggle button{padding:5px 18px; border:1px solid var(--border); border-radius:14px; background:#fff; color:var(--sub); cursor:pointer; font-size:13px; font-family:inherit;}
+.chain-toggle button.active{background:var(--accent); color:#fff; font-weight:600;}
+.chain-toggle button:hover:not(.active){background:#eef2f7;}
+.grid.chart-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:980px){ .grid.chart-row{grid-template-columns:1fr;} }
 table.chain-tbl{width:100%;border-collapse:collapse;font-size:12px;background:#fff;}
 table.chain-tbl th{position:sticky;top:0;z-index:3;background:var(--accent);color:#fff;font-weight:600;padding:5px 8px;border:1px solid #dfe5ef;white-space:nowrap;}
 table.chain-tbl td{padding:4px 8px;border:1px solid #e8ecf3;text-align:right;white-space:nowrap;}
@@ -258,21 +265,42 @@ table.chain-tbl td.net-neg{color:#C62828; font-weight:600;}
 
   <!-- 天胶+轮胎合计（贸易流页 chain 子页，仅切换时显示） -->
   <div id="chainPanel" style="display:none">
-    <div class="section-title">天胶+轮胎合计 · 产业链净流量（月度 / 年度累计）</div>
+    <div class="section-title">天胶+轮胎合计 · 产业链净流量（年度累计 + 月度合计）</div>
     <div class="row-label" id="chainNote"></div>
     <div class="chain-subjects" id="chainSubjects"></div>
+
+    <!-- 年度累计合计表（顶部，黑字） -->
     <div class="tablecard">
-      <h2>月度合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（向上滚动查看历史月份；正=净出口/净进口，表头底色：浅绿=合计净出口，浅粉=合计净进口）</span></h2>
+      <h2>年度累计合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（* 为未满 12 个月的年份，按截至最新月累计；表头底色：浅绿=合计净出口、浅粉=合计净进口；加总列突出）</span></h2>
+      <div class="tbl-scroll" id="chainAnnualScroll" style="max-height:260px;overflow-y:auto;"><table class="chain-tbl" id="chainAnnualTable"></table></div>
+    </div>
+
+    <!-- 月度合计表 -->
+    <div class="tablecard">
+      <h2>月度合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（向上滚动查看历史月份；正=净出口/净进口，值颜色：正绿负红）</span></h2>
       <div class="tbl-scroll" id="chainMonthlyScroll" style="max-height:340px;overflow-y:auto;"><table class="chain-tbl" id="chainMonthlyTable"></table></div>
     </div>
-    <div class="tablecard">
-      <h2>年度累计合计（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（* 为未满 12 个月的年份，按截至最新月累计）</span></h2>
-      <div class="tbl-scroll" id="chainAnnualScroll" style="max-height:240px;overflow-y:auto;"><table class="chain-tbl" id="chainAnnualTable"></table></div>
+
+    <!-- 切换标签 + 左右两图（净出口国 / 净进口国） -->
+    <div class="chain-toggle" id="chainToggle">
+      <button class="active" data-mode="monthly">月度图</button>
+      <button data-mode="annual">年度图</button>
     </div>
-    <div class="card">
-      <div class="ttl"><span id="chainChartTitle">月度合计堆积柱状图（万吨）</span></div>
-      <div class="chart tall" id="chainChart" style="height:380px;"></div>
+    <div class="grid c2 chart-row">
+      <div class="card">
+        <div class="ttl" id="chainChartExpTitle">净出口国合计（堆积柱，万吨）</div>
+        <div class="chart tall" id="chainChartExp" style="height:380px;"></div>
+      </div>
+      <div class="card">
+        <div class="ttl" id="chainChartImpTitle">净进口国合计（堆积柱，万吨）</div>
+        <div class="chart tall" id="chainChartImp" style="height:380px;"></div>
+      </div>
     </div>
+
+    <!-- 各国/地区月度季节图 -->
+    <div class="section-title" style="margin-top:26px">各国/地区月度季节图（单位：万吨）</div>
+    <div class="row-label">横轴 1-12 月，纵轴为合计值；按年份配色（最近一年加粗黑线）；含东南亚合计、欧美合计、净进口合计</div>
+    <div class="grid c4" id="chainSeasonGrid"></div>
   </div>
 
   <div class="summary" id="summary"></div>
@@ -585,7 +613,7 @@ function renderChainSubjects(){
     return '<span class="csub'+(s===chainSubject?' active':'')+'" onclick="chainSwitchSubject(\''+s+'\')">'+s+'</span>';
   }).join('');
 }
-function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainAnnual(); renderChainChart(); }
+function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainAnnual(); renderChainCharts(); renderChainSeasonal(); }
 function renderChainMonthly(){
   var cols=chainCols(), ms=CHAIN.months||[];
   var head='<thead><tr><th class="date-col">日期</th>';
@@ -621,57 +649,164 @@ function renderChainAnnual(){
     body+='<tr><td class="date-col">'+y+(partial(y)?' <span class="yr-partial">*</span>':'')+'</td>';
     cols.forEach(function(c){
       var v=chainYSum(c,y), st=chainFmt(v);
-      body+='<td class="'+(st===''?'val-null ':'')+chainNetCls(v)+' '+chainTdCls(c)+'">'+st+'</td>';
+      // 年度表统一黑色数字（不加 net-pos/net-neg），加总列保留 td-sum
+      body+='<td class="'+(st===''?'val-null ':'')+chainTdCls(c)+'">'+st+'</td>';
     });
     body+='</tr>';
   });
   body+='</tbody>';
   var t=document.getElementById('chainAnnualTable'); if(t) t.innerHTML=head+body;
 }
-function renderChainChart(){
-  var el=document.getElementById('chainChart'); if(!el) return;
-  if(chainChartInst){ try{chainChartInst.dispose();}catch(e){} chainChartInst=null; }
-  if(typeof echarts==="undefined") return;
-  chainChartInst=echarts.init(el);
-  var ms=CHAIN.months||[];
-  if(chainSubject==="汇总概览"){
-    // 汇总概览：展示 净出口组(东南亚合计/泰/印/越/科) 与 净进口组(净进口合计/中/韩/日/印/欧美合计/美/欧盟) 各合计折线
-    var series=CHAIN.totalCols.map(function(c){
-      return {name:c, type:'line', showSymbol:false, connectNulls:true, data:ms.map(function(m){ var v=chainVal(c,m); return (v===null||v===undefined)?null:+v.toFixed(2); })};
+
+// 净出口国/净进口国 各国堆叠列（不含加总列，避免重复）
+var CHAIN_STACK_EXP = ['泰国','印尼','越南','科特迪瓦'];                  // 5 列名(净出口)
+var CHAIN_STACK_IMP = ['中国','韩国','日本','印度','美国','欧盟'];        // 6 列名(净进口)
+var chainChartMode = 'monthly';                                           // monthly | annual
+var chainChartInsts = {exp:null, imp:null};
+var chainSeasonInsts = [];
+
+function chainXCategories(){
+  // 月度图：按月聚合平均；年度图：按年累加（折算万吨均值保留）
+  return (chainChartMode==='monthly')
+    ? (function(){ var ms=CHAIN.months||[], out=[]; ms.forEach(function(m){ out.push(chainMonthLabel(m)); }); return out; }())
+    : (CHAIN.years||[]).map(String);
+}
+function chainXDataForCol(col){
+  // 返回当前模式下 col 的序列（月度=各月值；年度=各年累计）
+  var xs = chainXCategories();
+  if(chainChartMode==='monthly'){
+    return (CHAIN.months||[]).map(function(m){ var v=chainVal(col,m); return (v===null||v===undefined)?null:+v.toFixed(3); });
+  } else {
+    return (CHAIN.years||[]).map(function(y){ var v=chainYSum(col,y); return (v===null||v===undefined)?null:+v.toFixed(2); });
+  }
+}
+// 单图通用：cols=堆叠序列名；chartId=容器
+function renderChainSingleChart(chartId, titleId, cols, titleText){
+  var el=document.getElementById(chartId); if(!el) return;
+  if(typeof echarts==='undefined') return;
+  var isMonth=(chainChartMode==='monthly');
+  var series=cols.map(function(c){
+    return {name:c, type:'bar', stack:'net', barMaxWidth: isMonth?10:30, data: chainXDataForCol(c)};
+  });
+  // 加一条「合计」折线（基于该组各国合计值，与堆叠总和一致）
+  var totalData=(isMonth? (CHAIN.months||[]) : (CHAIN.years||[]).map(String)).map(function(k){
+    var s=0, has=false;
+    cols.forEach(function(c){
+      var v=isMonth ? chainVal(c, k) : chainYSum(c, k);
+      if(v!==null&&v!==undefined){ s+=v; has=true; }
     });
-    chainChartInst.setOption({
+    return has ? +s.toFixed(2) : null;
+  });
+  series.push({name:'合计', type:'line', yAxisIndex:0, data:totalData,
+    lineStyle:{width:2.2, color:'#1A1A1A'}, itemStyle:{color:'#1A1A1A'}, symbolSize:4, z:10});
+  var inst=echarts.init(el);
+  inst.setOption({
+    animation:false,
+    tooltip:{trigger:'axis', axisPointer:{type:'shadow'}},
+    legend:{show:true, top:0, textStyle:{fontSize:11, color:'#6b7686'}},
+    grid:{left:8, right:10, top:30, bottom: (isMonth?32:8), containLabel:true},
+    xAxis:{type:'category', data:chainXCategories(),
+      axisLabel:{interval:isMonth?11:0, fontSize:10, color:'#8a93a3'},
+      axisTick:{show:false}, axisLine:{lineStyle:{color:'#dde3ec'}}, splitLine:{show:false}},
+    yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#8a93a3'}, splitLine:{lineStyle:{color:'#eef1f6'}}},
+    dataZoom: isMonth ? [{type:'slider', height:16, bottom:8, start:Math.max(0,100-Math.round(30/chainXCategories().length*100)), showDetail:false, handleSize:'60%'}] : [],
+    series:series
+  });
+  if(chartId==='chainChartExp'){ if(chainChartInsts.exp){try{chainChartInsts.exp.dispose();}catch(e){}} chainChartInsts.exp=inst; }
+  else{ if(chainChartInsts.imp){try{chainChartInsts.imp.dispose();}catch(e){}} chainChartInsts.imp=inst; }
+  allCharts.push(inst);
+}
+function renderChainCharts(){
+  // 释放旧实例
+  if(chainChartInsts.exp){ try{chainChartInsts.exp.dispose();}catch(e){} chainChartInsts.exp=null; }
+  if(chainChartInsts.imp){ try{chainChartInsts.imp.dispose();}catch(e){} chainChartInsts.imp=null; }
+  renderChainSingleChart('chainChartExp', 'chainChartExpTitle', CHAIN_STACK_EXP, '净出口国');
+  renderChainSingleChart('chainChartImp', 'chainChartImpTitle', CHAIN_STACK_IMP, '净进口国');
+}
+function chainToggleMode(mode){
+  if(chainChartMode===mode) return;
+  chainChartMode=mode;
+  document.querySelectorAll('#chainToggle button').forEach(function(b){
+    b.classList.toggle('active', b.dataset.mode===mode);
+  });
+  renderChainCharts();
+}
+
+// 各国/地区月度季节图（grid c4）
+var CHAIN_SEASON_SUBJECTS = ['东南亚合计','泰国','印尼','越南','科特迪瓦','净进口合计','中国','韩国','日本','印度','欧美合计','美国','欧盟'];
+function chainValBySubject(subj, m){
+  if(!CHAIN) return null;
+  if(CHAIN.totalCols.indexOf(subj)>=0){ return (CHAIN.total[subj]||{})[m]; }
+  var s=(CHAIN.net[subj]||{})['合计'];
+  return s ? s[m] : null;
+}
+function renderChainSeasonal(){
+  var grid=document.getElementById('chainSeasonGrid'); if(!grid) return;
+  if(typeof echarts==='undefined') return;
+  // 释放旧实例
+  chainSeasonInsts.forEach(function(c){ try{c.dispose();}catch(e){} });
+  chainSeasonInsts=[];
+  grid.innerHTML='';
+  var months12=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  CHAIN_SEASON_SUBJECTS.forEach(function(subj){
+    var card=document.createElement('div'); card.className='card';
+    var ttl=document.createElement('div'); ttl.className='ttl'; ttl.textContent=subj;
+    card.appendChild(ttl);
+    var div=document.createElement('div'); div.style.width='100%'; div.style.height='200px';
+    card.appendChild(div);
+    grid.appendChild(card);
+    var dataByYear={};
+    (CHAIN.months||[]).forEach(function(m){
+      var v=chainValBySubject(subj, m);
+      if(v===null||v===undefined) return;
+      var y=m.slice(0,4), mi=parseInt(m.slice(5,7))-1;
+      (dataByYear[y]=dataByYear[y]||[]).push([mi, v]);
+    });
+    var years=Object.keys(dataByYear).sort();
+    var series=[], legend=[];
+    var lastY=years.length?years[years.length-1]:null;
+    years.forEach(function(y){
+      var pts=dataByYear[y]; pts.sort(function(a,b){return a[0]-b[0];});
+      legend.push(y);
+      var isLatest=(y===lastY);
+      series.push({name:y, type:'line', showSymbol:false, connectNulls:true, data:pts,
+        lineStyle:{width:isLatest?2.2:1.4, color:yearColor(y)},
+        itemStyle:{color:yearColor(y)}, emphasis:{focus:'series'}, z:isLatest?10:5});
+    });
+    var inst=echarts.init(div);
+    inst.setOption({
       animation:false,
-      tooltip:{trigger:'axis'},
-      legend:{show:true, top:0, type:'scroll', textStyle:{fontSize:11,color:'#6b7686'}},
-      grid:{left:8,right:14,top:34,bottom:26,containLabel:true},
-      xAxis:{type:'category', data:ms.map(chainMonthLabel), axisLabel:{interval:11, fontSize:10, color:'#8a93a3'}},
+      grid:{left:8, right:12, top:24, bottom:4, containLabel:true},
+      legend:{show:true, top:0, itemWidth:14, itemHeight:2, icon:'rect',
+        textStyle:{fontSize:10,color:'#6b7686'}, data:legend},
+      tooltip:{trigger:'axis', confine:true,
+        formatter:function(ps){ if(!ps.length) return ''; var s=months12[ps[0].value[0]]; ps.forEach(function(p){ s+='<br>'+p.marker+p.seriesName+'年： <b>'+fmt(p.value[1],2)+'</b>'; }); return s; }},
+      xAxis:{type:'value', min:0, max:11, interval:1,
+        axisLabel:{fontSize:10,color:'#8a93a3', formatter:function(v){ return months12[v]||''; }},
+        axisTick:{show:false}, axisLine:{lineStyle:{color:'#dde3ec'}}, splitLine:{show:false}},
       yAxis:{type:'value', scale:true, axisLabel:{fontSize:10,color:'#8a93a3'}, splitLine:{lineStyle:{color:'#eef1f6'}}},
       series:series
     });
-  } else {
-    // 国家子页：天胶/半钢/全钢 堆叠柱 + 合计折线
-    var parts=['天胶','半钢胎','全钢胎'];
-    var stack=parts.map(function(p){
-      return {name:p, type:'bar', stack:'net', barMaxWidth:18, data:ms.map(function(m){ var v=(CHAIN.net[chainSubject]||{})[p]||{}; var x=v[m]; return (x===null||x===undefined)?null:+x.toFixed(2); })};
-    });
-    stack.push({name:'合计', type:'line', data:ms.map(function(m){ var v=chainVal('合计',m); return (v===null||v===undefined)?null:+v.toFixed(2); }),
-      lineStyle:{width:2.2, color:'#1A1A1A'}, itemStyle:{color:'#1A1A1A'}, symbolSize:4, z:10});
-    chainChartInst.setOption({
-      animation:false,
-      tooltip:{trigger:'axis', axisPointer:{type:'shadow'}},
-      legend:{show:true, top:0, textStyle:{fontSize:11,color:'#6b7686'}},
-      grid:{left:8,right:14,top:30,bottom:26,containLabel:true},
-      xAxis:{type:'category', data:ms.map(chainMonthLabel), axisLabel:{interval:11, fontSize:10, color:'#8a93a3'}},
-      yAxis:{type:'value', scale:true, axisLabel:{fontSize:10,color:'#8a93a3'}, splitLine:{lineStyle:{color:'#eef1f6'}}},
-      series:stack
-    });
-  }
-  allCharts.push(chainChartInst);
+    chainSeasonInsts.push(inst);
+    allCharts.push(inst);
+  });
 }
+
 function renderChainPanel(){
   if(!CHAIN) return;
   document.getElementById("chainNote").textContent=CHAIN.note||"";
-  renderChainSubjects(); renderChainMonthly(); renderChainAnnual(); renderChainChart();
+  // 释放旧的季节图实例（如果用户在 chainPanel 内切换过 subject）
+  chainSeasonInsts.forEach(function(c){ try{c.dispose();}catch(e){} });
+  chainSeasonInsts=[];
+  renderChainSubjects();
+  renderChainAnnual();     // 顶部黑字年度表
+  renderChainMonthly();
+  renderChainCharts();
+  renderChainSeasonal();
+  // 切换按钮绑定
+  document.querySelectorAll('#chainToggle button').forEach(function(b){
+    b.onclick=function(){ chainToggleMode(b.dataset.mode); };
+  });
 }
 
 function buildFilter(){
