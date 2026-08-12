@@ -49,19 +49,6 @@ table.data tbody tr:nth-child(even) td.tot{background:#e9eff8;}
 .toggle-btn:not(.active):hover{background:#d7dee8;}
 .toggle-note{font-size:12px; color:var(--sub); margin-left:12px;}
 
-/* 顶部简要总结 */
-.summary-box{background:linear-gradient(135deg,#0f4c81 0%,#2c3e50 100%); color:#fff; border-radius:12px;
-  padding:18px 22px; margin-bottom:20px; box-shadow:0 4px 16px rgba(15,76,129,.14);}
-.summary-box h2{font-size:16px; margin:0 0 12px; font-weight:700; letter-spacing:.5px;}
-.summary-box .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:12px;}
-.summary-box .kpi{background:rgba(255,255,255,.10); border-radius:8px; padding:10px 12px;}
-.summary-box .kpi .k{font-size:11.5px; opacity:.85;}
-.summary-box .kpi .v{font-size:18px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums;}
-.summary-box .kpi .v small{font-size:12px; opacity:.82; font-weight:400; margin-left:2px;}
-.summary-box .pts{font-size:12.5px; line-height:1.75; opacity:.96;}
-.summary-box .pts b{color:#ffd9a8;}
-.summary-box .src{margin-top:10px; font-size:11px; opacity:.7; border-top:1px solid rgba(255,255,255,.25); padding-top:8px;}
-
 /* 历史数据折叠 */
 .collapse-bar{margin:10px 0 6px;}
 .collapse-btn{padding:6px 16px; border:1px solid var(--border); background:#fff; color:var(--accent);
@@ -85,22 +72,6 @@ table.data.collapsed tr.hist{display:none;}
     <div class="date" id="pageSub"></div>
   </div>
   <div class="tabs" id="tabs"></div>
-
-  <div class="summary-box">
-    <h2>2026 年度供需展望 · 简要总结</h2>
-    <div class="grid">
-      <div class="kpi"><div class="k">2026E 全球产量</div><div class="v">1515<small>万吨 (+1.2%)</small></div></div>
-      <div class="kpi"><div class="k">2026E 全球消费</div><div class="v">1562<small>万吨 (+1.8%)</small></div></div>
-      <div class="kpi"><div class="k">2026E 供需平衡</div><div class="v" style="color:#ffd2cc">−47<small>万吨 · 缺口扩大</small></div></div>
-      <div class="kpi"><div class="k">2027E 缺口</div><div class="v" style="color:#ffd2cc">−63<small>万吨</small></div></div>
-    </div>
-    <div class="pts">
-      • <b>供给端：</b>增产主力为科特迪瓦(+3.5%)、泰国(+1.5%)、中国、越南；减产核心为印尼(−2.5%，树龄老化 + 油棕挤占)与马来。<br>
-      • <b>需求端：</b>亮点在中国(重卡更换周期 + NEV，消费 +17 万吨)与印度(稳增)；拖累来自美国(进口下滑，消费 −3 万吨)。<br>
-      • <b>后市判断：</b>全球连续多年"产不足需"，缺口由 2025 年 −38 万吨扩大至 2026E −47、2027E −63 万吨；2004–13 旺产期胶树预计 2029 年后进入减产期，短期高价刺激的边际增产有限；浓乳分流(全乳胶挤压)变量集中在 8–10 月窗口。
-    </div>
-    <div class="src">简要总结参考：紫金天风期货《2026 年天然橡胶、20 号胶供需展望》(2026-08-05) 及 ANRPC 公开趋势；绝对量、增速取自本看板底稿《橡胶各国平衡表》(2026-08-12 版)。</div>
-  </div>
 
   <div class="section-title">年度平衡 · 绝对值<span class="sub-inline" id="mainSub"></span></div>
   <div class="collapse-bar">
