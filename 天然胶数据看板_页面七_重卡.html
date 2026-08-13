@@ -687,9 +687,11 @@ var chainChartMode = 'monthly';                                           // mon
 var chainChartInsts = {exp:null, imp:null};
 var chainSeasonInsts = [];
 
-// 单图通用：cols=堆叠序列名；chartId=容器；mode='monthly'|'annual' 决定 x 轴
+// 单图通用：cols=堆叠序列名；chartId=容器；titleId=标题元素 id（覆盖写）；titleText=新标题；mode='monthly'|'annual' 决定 x 轴
 function renderChainSingleChart(chartId, titleId, cols, titleText, mode){
   var el=document.getElementById(chartId); if(!el) return;
+  var tEl=titleId?document.getElementById(titleId):null;
+  if(tEl && titleText) tEl.textContent=titleText;
   if(typeof echarts==='undefined') return;
   var isMonth=(mode==='monthly');
   var xCats=isMonth ? (CHAIN.months||[]).map(chainMonthLabel) : (CHAIN.years||[]).map(String);
