@@ -632,7 +632,7 @@ function renderChainSubjects(){
     return '<span class="csub'+(s===chainSubject?' active':'')+'" onclick="chainSwitchSubject(\''+s+'\')">'+s+'</span>';
   }).join('');
 }
-function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainMonthly2(); renderChainAnnual(); renderChainRange(); renderChainCharts(); renderChainSeasonal(); }
+function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainMonthly2(); renderChainAnnual(); renderChainRange(); renderChainFilterBar(); renderChainRange(); renderChainCharts(); renderChainSeasonal(); }
 function renderChainMonthlyTo(tid, sid){
   var cols=chainCols(), ms=CHAIN.months||[];
   var head='<thead><tr><th class="date-col">日期</th>';
@@ -810,6 +810,26 @@ function aggChainRange(sy,sm,ey,em,col){
   });
   return has ? +s.toFixed(4) : null;
 }
+function chainColCount(){
+  return (chainSubject==='汇总概览') ? (CHAIN.totalCols||[]).length : (CHAIN.net[chainSubject] ? 1 : 0);
+}
+function pickDefaultEnd(){
+  // 默认 end = 最近"≥50% 列有值"的月（避免选数据大面积缺失的尾部月）
+  var ms=CHAIN.months||[];
+  if(!ms.length) return '';
+  var cols=chainColCount();
+  if(!cols) return ms[ms.length-1];
+  for(var i=ms.length-1;i>=0;i--){
+    var m=ms[i], has=0;
+    if(chainSubject==='汇总概览'){
+      (CHAIN.totalCols||[]).forEach(function(c){ if(CHAIN.total[c] && CHAIN.total[c][m]!=null) has++; });
+    } else {
+      if(CHAIN.net[chainSubject] && CHAIN.net[chainSubject]['合计'] && CHAIN.net[chainSubject]['合计'][m]!=null) has=1;
+    }
+    if(has >= Math.max(1, Math.ceil(cols/2))) return m;
+  }
+  return ms[ms.length-1];
+}
 function renderChainFilterBar(){
   var box=document.getElementById('chainFilterBar'); if(!box) return;
   var years=CHAIN.years||[];
@@ -821,8 +841,8 @@ function renderChainFilterBar(){
     '<select id="chainRangeEndYear"></select><select id="chainRangeEndMonth">'+moOpts+'</select>';
   var fY=document.getElementById('chainRangeStartYear'), tY=document.getElementById('chainRangeEndYear');
   years.forEach(function(y){ fY.add(new Option(y,y)); tY.add(new Option(y,y)); });
-  // 默认：当年 1 月至最新月（最新月取 CHAIN.months 末位）
-  var latestM=(CHAIN.months||[])[(CHAIN.months||[]).length-1] || '';
+  // 默认：当年 1 月至"最近≥50%列有值"的月（避免选数据大面积缺失的尾部月，如 2026-07）
+  var latestM=pickDefaultEnd();
   var latest=latestM.split('-');
   fY.value=latest[0] || years[years.length-1] || '';
   tY.value=latest[0] || years[years.length-1] || '';
