@@ -89,8 +89,8 @@ function yearColor(y){ return YEAR_COLORS[String(y)] || "#888888"; }
 
 function fmt(v, type){
   if(v===null || v===undefined || (typeof v==="number" && isNaN(v))) return "";
-  if(type==="pct") return v.toFixed(1)+"%";
-  return Number(v).toLocaleString("zh-CN",{maximumFractionDigits:1});
+  if(type==="pct") return Math.round(v)+"%";          // 开割率：百分比保留整数
+  return Math.round(v).toString();                  // 面积/亩产：保留整数、不加千分位符
 }
 function vOf(c, ind, y){
   if(c==="全球合计"){ var g=(D.globalTotal||{})[ind]; return g ? g[y] : null; }
