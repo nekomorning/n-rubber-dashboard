@@ -668,38 +668,27 @@ function renderChainAnnual(){
   var t=document.getElementById('chainAnnualTable'); if(t) t.innerHTML=head+body;
 }
 
-// 净出口国/净进口国 各国堆叠列（不含加总列，避免重复）
-var CHAIN_STACK_EXP = ['泰国','印尼','越南','科特迪瓦'];                  // 5 列名(净出口)
-var CHAIN_STACK_IMP = ['中国','韩国','日本','印度','美国','欧盟'];        // 6 列名(净进口)
-var chainChartMode = 'monthly';                                           // monthly | annual
+// 净出口国/净进口国 各国堆叠列（不含加总列，避免重复）；汇总概览双图专用
+var CHAIN_STACK_EXP = ['泰国','印尼','越南','科特迪瓦'];                  // 4 国(净出口)
+var CHAIN_STACK_IMP = ['中国','韩国','日本','印度','美国','欧盟'];        // 6 国(净进口)
+var chainChartMode = 'monthly';                                           // monthly | annual（仅汇总概览生效）
 var chainChartInsts = {exp:null, imp:null};
 var chainSeasonInsts = [];
 
-function chainXCategories(){
-  // 月度图：按月聚合平均；年度图：按年累加（折算万吨均值保留）
-  return (chainChartMode==='monthly')
-    ? (function(){ var ms=CHAIN.months||[], out=[]; ms.forEach(function(m){ out.push(chainMonthLabel(m)); }); return out; }())
-    : (CHAIN.years||[]).map(String);
-}
-function chainXDataForCol(col){
-  // 返回当前模式下 col 的序列（月度=各月值；年度=各年累计）
-  var xs = chainXCategories();
-  if(chainChartMode==='monthly'){
-    return (CHAIN.months||[]).map(function(m){ var v=chainVal(col,m); return (v===null||v===undefined)?null:+v.toFixed(3); });
-  } else {
-    return (CHAIN.years||[]).map(function(y){ var v=chainYSum(col,y); return (v===null||v===undefined)?null:+v.toFixed(2); });
-  }
-}
-// 单图通用：cols=堆叠序列名；chartId=容器
-function renderChainSingleChart(chartId, titleId, cols, titleText){
+// 单图通用：cols=堆叠序列名；chartId=容器；mode='monthly'|'annual' 决定 x 轴
+function renderChainSingleChart(chartId, titleId, cols, titleText, mode){
   var el=document.getElementById(chartId); if(!el) return;
   if(typeof echarts==='undefined') return;
-  var isMonth=(chainChartMode==='monthly');
+  var isMonth=(mode==='monthly');
+  var xCats=isMonth ? (CHAIN.months||[]).map(chainMonthLabel) : (CHAIN.years||[]).map(String);
   var series=cols.map(function(c){
-    return {name:c, type:'bar', stack:'net', barMaxWidth: isMonth?10:30, data: chainXDataForCol(c)};
+    var data=isMonth
+      ? (CHAIN.months||[]).map(function(m){ var v=chainVal(c,m); return (v===null||v===undefined)?null:+v.toFixed(3); })
+      : (CHAIN.years||[]).map(function(y){ var v=chainYSum(c,y); return (v===null||v===undefined)?null:+v.toFixed(2); });
+    return {name:c, type:'bar', stack:'net', barMaxWidth: isMonth?10:30, data:data};
   });
-  // 加一条「合计」折线（基于该组各国合计值，与堆叠总和一致）
-  var totalData=(isMonth? (CHAIN.months||[]) : (CHAIN.years||[]).map(String)).map(function(k){
+  // 「合计」折线：该组列逐月/逐年求和
+  var totalData=xCats.map(function(k){
     var s=0, has=false;
     cols.forEach(function(c){
       var v=isMonth ? chainVal(c, k) : chainYSum(c, k);
@@ -715,11 +704,11 @@ function renderChainSingleChart(chartId, titleId, cols, titleText){
     tooltip:{trigger:'axis', axisPointer:{type:'shadow'}},
     legend:{show:true, top:0, textStyle:{fontSize:11, color:'#6b7686'}},
     grid:{left:8, right:10, top:30, bottom: (isMonth?32:8), containLabel:true},
-    xAxis:{type:'category', data:chainXCategories(),
+    xAxis:{type:'category', data:xCats,
       axisLabel:{interval:isMonth?11:0, fontSize:10, color:'#8a93a3'},
       axisTick:{show:false}, axisLine:{lineStyle:{color:'#dde3ec'}}, splitLine:{show:false}},
     yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#8a93a3'}, splitLine:{lineStyle:{color:'#eef1f6'}}},
-    dataZoom: isMonth ? [{type:'slider', height:16, bottom:8, start:Math.max(0,100-Math.round(30/chainXCategories().length*100)), showDetail:false, handleSize:'60%'}] : [],
+    dataZoom: isMonth ? [{type:'slider', height:16, bottom:8, start:Math.max(0,100-Math.round(30/xCats.length*100)), showDetail:false, handleSize:'60%'}] : [],
     series:series
   });
   if(chartId==='chainChartExp'){ if(chainChartInsts.exp){try{chainChartInsts.exp.dispose();}catch(e){}} chainChartInsts.exp=inst; }
@@ -730,10 +719,19 @@ function renderChainCharts(){
   // 释放旧实例
   if(chainChartInsts.exp){ try{chainChartInsts.exp.dispose();}catch(e){} chainChartInsts.exp=null; }
   if(chainChartInsts.imp){ try{chainChartInsts.imp.dispose();}catch(e){} chainChartInsts.imp=null; }
-  renderChainSingleChart('chainChartExp', 'chainChartExpTitle', CHAIN_STACK_EXP, '净出口国');
-  renderChainSingleChart('chainChartImp', 'chainChartImpTitle', CHAIN_STACK_IMP, '净进口国');
+  if(chainSubject==='汇总概览'){
+    // 汇总概览：左图=净出口国堆叠、右图=净进口国堆叠（模式由 chainChartMode 控制）
+    renderChainSingleChart('chainChartExp', 'chainChartExpTitle', CHAIN_STACK_EXP, '净出口国', chainChartMode);
+    renderChainSingleChart('chainChartImp', 'chainChartImpTitle', CHAIN_STACK_IMP, '净进口国', chainChartMode);
+  } else {
+    // 国家子页：左图=该国月度柱、右图=该国年度柱
+    var cols=chainCols();
+    renderChainSingleChart('chainChartExp', 'chainChartExpTitle', cols, chainSubject+'·月度图', 'monthly');
+    renderChainSingleChart('chainChartImp', 'chainChartImpTitle', cols, chainSubject+'·年度图', 'annual');
+  }
 }
 function chainToggleMode(mode){
+  if(chainSubject!=='汇总概览') return;   // 国家子页固定左月右年，不响应 toggle
   if(chainChartMode===mode) return;
   chainChartMode=mode;
   document.querySelectorAll('#chainToggle button').forEach(function(b){
