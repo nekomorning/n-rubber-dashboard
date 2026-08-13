@@ -640,7 +640,8 @@ function renderChainMonthlyTo(tid, sid){
     body+='<tr><td class="date-col">'+chainMonthLabel(m)+'</td>';
     cols.forEach(function(c){
       var v=chainVal(c,m), st=chainFmt(v);
-      body+='<td class="'+(st===''?'val-null ':'')+chainNetCls(v)+' '+chainTdCls(c)+'">'+st+'</td>';
+      // 月度表统一黑字（2026-08-13 起），加总列保留 td-sum 加粗底
+      body+='<td class="'+(st===''?'val-null ':'')+chainTdCls(c)+'">'+st+'</td>';
     });
     body+='</tr>';
   });
@@ -847,7 +848,7 @@ function renderChainRange(){
   var head='<thead><tr><th class="date-col">指标</th>';
   cols.forEach(function(c){ head+='<th class="'+chainHeadCls(c)+'">'+c+'</th>'; });
   head+='</tr></thead>';
-  function row(name, arr, isPct){
+  function row(name, arr, isPct, colorize){
     var r='<tr><td class="date-col">'+name+'</td>';
     arr.forEach(function(v,i){
       var c=cols[i];
@@ -855,17 +856,17 @@ function renderChainRange(){
       var cls='';
       var s='';
       if(v===null||v===undefined){ s=''; cls='val-null'; }
-      else if(isPct){ s=(v>=0?'+':'')+v.toFixed(1)+'%'; cls='net-'+(v>=0?'pos':'neg'); }
-      else { s=chainFmt(v); cls='net-'+(v>=0?'pos':'neg'); }
+      else if(isPct){ s=(v>=0?'+':'')+v.toFixed(1)+'%'; if(colorize) cls='net-'+(v>=0?'pos':'neg'); }
+      else { s=chainFmt(v); if(colorize) cls='net-'+(v>=0?'pos':'neg'); }
       r+='<td class="'+sty+' '+cls+'">'+s+'</td>';
     });
     return r+'</tr>';
   }
   var body='<tbody>';
-  body+=row('上年同期累计', lst, false);
-  body+=row('当年累计', sel, false);
-  body+=row('同比增减值', diff, false);
-  body+=row('同比增减%', pct, true);
+  body+=row('上年同期累计', lst, false, false);   // 黑字
+  body+=row('当年累计', sel, false, false);        // 黑字
+  body+=row('同比增减值', diff, false, true);      // 红涨绿跌
+  body+=row('同比增减%', pct, true, true);         // 红涨绿跌
   body+='</tbody>';
   document.getElementById('chainRangeTable').innerHTML=head+body;
   document.getElementById('chainRangeNote').textContent=
