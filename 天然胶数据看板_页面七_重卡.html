@@ -328,7 +328,7 @@ table.chain-tbl td.net-down{color:#2E7D32; font-weight:600;}
 
   <div class="oni-block" id="oniBlock"></div>
 
-  <div class="tablecard">
+  <div class="tablecard" id="latestTableCard">
     <h2>最新数据一览表 <span style="font-size:12px;color:var(--sub);font-weight:400" id="tableNote"></span></h2>
     <table id="dataTable">
       <thead><tr>
@@ -448,10 +448,10 @@ function init(){
   document.title = "天然胶数据看板 · " + (D.pageTitle||"");
   document.getElementById("latestDate").textContent=D.latestDataDate;
   document.getElementById("pageSub").textContent=D.pageSub||"";
-  document.getElementById("tableNote").textContent=D.tableNote||"";
+  var _tn=document.getElementById("tableNote"); if(_tn) _tn.textContent=D.tableNote||"";
   document.getElementById("footPage").textContent=D.pageTitle||"";
-  // 页面四（天气数据）隐藏「最新数据一览表」
-  if(D.hideTable===true){ var tcEl=document.querySelector('.tablecard'); if(tcEl) tcEl.style.display='none'; }
+  // hideTable 时移除整块「最新数据一览表」（不依赖 CSS 隐藏）
+  if(D.hideTable===true){ var tcEl=document.getElementById('latestTableCard'); if(tcEl) tcEl.parentNode.removeChild(tcEl); }
   // 月度页（页面五）改写表头：日/周环比 -> 环比/同比
   if(D.tableHeads){
     var ths=document.querySelectorAll("#dataTable thead th");
@@ -465,7 +465,7 @@ function init(){
   // 默认展示最近 4 年，更早年份收起（可点击开启）
   var n=D.years.length;
   D.years.forEach(function(y,i){ yearVisible[y]=(i>=n-4); });
-  buildTabs(); buildSubTabs(); buildFilter(); buildTireTypeFilter(); buildOni(); buildSummary(); buildTable(); buildSections(); buildMichelin(); buildSankey(); buildFilterPanel();
+  buildTabs(); buildSubTabs(); buildFilter(); buildTireTypeFilter(); buildOni(); buildSummary(); if(D.hideTable!==true) buildTable(); buildSections(); buildMichelin(); buildSankey(); buildFilterPanel();
   // 贸易流页默认显示「天胶+轮胎合计」（chain 子页）
   if(D.pageId==="p5" && window.__CHAIN__){ try{ switchSub("chain"); }catch(e){} }
   var t; window.addEventListener("resize",function(){ clearTimeout(t); t=setTimeout(function(){ allCharts.forEach(function(c){c.resize();}); },150); });
@@ -1784,7 +1784,10 @@ function makeCard(ch,ticks,grid,row){
     animation:false,
     grid:{left:8,right:14,top:26,bottom:4,containLabel:true},
     legend:{show:true, top:0, right:0, itemWidth:14, itemHeight:2, icon:"rect",
-      textStyle:{fontSize:11,color:"#6b7686"}, data:legend},
+      textStyle:{fontSize:11,color:"#6b7686"}, data:legend,
+      selected:(()=>{ var s={}; legend.forEach(function(y){ s[y]=yearVisible[y]; }); s['预报']=true;
+        // BR-NR/BR-RU 默认隐藏 2023（数据不全/2026-08-13 起），图例可点击恢复
+        if(ch.key==='BR-NR价差'||ch.key==='BR-RU价差') s['2023']=false; return s; })()},
       tooltip:{trigger:"axis", confine:true,
         formatter:function(ps){
           if(!ps.length) return "";
@@ -1806,9 +1809,6 @@ function makeCard(ch,ticks,grid,row){
         formatter:function(v){ return Math.abs(v)>=10000?(v/10000)+"万":(Math.abs(v)>=1000?(v/1000)+"k":v); }},
       splitLine:{lineStyle:{color:"#eef1f6"}}},
     series:series
-  });
-  D.years.forEach(function(y){
-    if(!yearVisible[y]) c.dispatchAction({type:"legendToggleSelect",name:String(y)});
   });
   charts.push(c); allCharts.push(c);
 }
@@ -2082,7 +2082,10 @@ function exportOption(D, ch){
       subtextStyle:{fontSize:15, color:subColor} },
     grid:{left:14, right:18, top:70, bottom:46, containLabel:true},
     legend:{show:true, bottom:6, left:"center", itemWidth:18, itemHeight:3, icon:"rect",
-      textStyle:{fontSize:13, color:"#6b7686"}, data:legend},
+      textStyle:{fontSize:13, color:"#6b7686"}, data:legend,
+      selected:(()=>{ var s={}; legend.forEach(function(y){ s[y]=yearVisible[y]; }); s['预报']=true;
+        // BR-NR/BR-RU 默认隐藏 2023（数据不全/2026-08-13 起），图例可点击恢复
+        if(ch.key==='BR-NR价差'||ch.key==='BR-RU价差') s['2023']=false; return s; })()},
     tooltip:{trigger:"axis", confine:true},
     xAxis:{type:"value", min:0, max:(xl.length-1), interval:1,
       axisLabel:{fontSize:13,color:"#8a93a3", formatter:function(v){ return ticks[v]||""; }},
