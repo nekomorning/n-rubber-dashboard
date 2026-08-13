@@ -250,6 +250,9 @@ table.chain-tbl td.td-sum.imp{background:#FFF3F6 !important;}
 /* 值颜色：正绿负红 */
 table.chain-tbl td.net-pos{color:#2E7D32; font-weight:600;}
 table.chain-tbl td.net-neg{color:#C62828; font-weight:600;}
+/* 红涨绿跌（区间筛选同比增减专用）：正数=涨=红，负数=跌=绿 */
+table.chain-tbl td.net-up{color:#C62828; font-weight:600;}
+table.chain-tbl td.net-down{color:#2E7D32; font-weight:600;}
 .yr-partial{color:#E60000; font-weight:700;}
 </style>
 </head>
@@ -856,8 +859,8 @@ function renderChainRange(){
       var cls='';
       var s='';
       if(v===null||v===undefined){ s=''; cls='val-null'; }
-      else if(isPct){ s=(v>=0?'+':'')+v.toFixed(1)+'%'; if(colorize) cls='net-'+(v>=0?'pos':'neg'); }
-      else { s=chainFmt(v); if(colorize) cls='net-'+(v>=0?'pos':'neg'); }
+      else if(isPct){ s=(v>=0?'+':'')+v.toFixed(1)+'%'; if(colorize) cls=(v>=0?'net-up':'net-down'); }
+      else { s=chainFmt(v); if(colorize) cls=(v>=0?'net-up':'net-down'); }
       r+='<td class="'+sty+' '+cls+'">'+s+'</td>';
     });
     return r+'</tr>';
