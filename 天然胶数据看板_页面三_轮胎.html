@@ -898,6 +898,9 @@ function renderChainRange(){
     '区间 '+sy+'年'+sm+'月 至 '+ey+'年'+em+'月 · 区间累计（月相加）；同比对照为去年同期同区间累计；列结构与所选子页面一致';
 }
 
+// 12 月份标签（季节图共用）
+var months12=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
 function renderChainSeasonal(){
   var grid=document.getElementById('chainSeasonGrid'); if(!grid) return;
   if(typeof echarts==='undefined') return;
@@ -905,17 +908,22 @@ function renderChainSeasonal(){
   chainSeasonInsts.forEach(function(c){ try{c.dispose();}catch(e){} });
   chainSeasonInsts=[];
   grid.innerHTML='';
-  var months12=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  CHAIN_SEASON_SUBJECTS.forEach(function(subj){
+  // 副标题行：链当前 cols 名（仅国家子页时显式列出，汇总态已由上方面板表头呈现）
+  grid.classList.toggle('is-summary', chainSubject==='汇总概览');
+  var subs = (chainSubject==='汇总概览') ? CHAIN_SEASON_SUBJECTS : renderCountrySeasonalSubjects();
+  subs.forEach(function(subj){
+    // subj 形态：汇总态=字符串、国家态={label, val}
+    var subLabel = (typeof subj==='string') ? subj : subj.label;
+    var subVal   = (typeof subj==='object' && subj.val) ? subj.val : function(m){ return chainValBySubject(subj, m); };
     var card=document.createElement('div'); card.className='card';
-    var ttl=document.createElement('div'); ttl.className='ttl'; ttl.textContent=subj;
+    var ttl=document.createElement('div'); ttl.className='ttl'; ttl.textContent=subLabel;
     card.appendChild(ttl);
     var div=document.createElement('div'); div.style.width='100%'; div.style.height='200px';
     card.appendChild(div);
     grid.appendChild(card);
     var dataByYear={};
     (CHAIN.months||[]).forEach(function(m){
-      var v=chainValBySubject(subj, m);
+      var v=subVal(m);
       if(v===null||v===undefined) return;
       var y=m.slice(0,4), mi=parseInt(m.slice(5,7))-1;
       (dataByYear[y]=dataByYear[y]||[]).push([mi, v]);
@@ -952,6 +960,19 @@ function renderChainSeasonal(){
     chainSeasonInsts.push(inst);
     allCharts.push(inst);
   });
+}
+// 国家子页：生成 4 张分项季节图（合计/天胶/半钢/全钢），标题按 export/import 区分出口/进口
+function renderCountrySeasonalSubjects(){
+  var c=chainSubject, t=CHAIN.types[c]||'export';
+  var dir=(t==='export')?'出口':'进口';
+  var net0=(CHAIN.net[c]||{});
+  function get(part){ return function(m){ var v=net0[part]?net0[part][m]:null; return (v===null||v===undefined)?null:v; }; }
+  return [
+    {label:c+'天胶+轮胎合计'+dir,    val:get('合计')},
+    {label:c+'天胶'+dir,             val:get('天胶')},
+    {label:c+'半钢'+dir+'折天胶',    val:get('半钢胎')},
+    {label:c+'全钢'+dir+'折天胶',    val:get('全钢胎')}
+  ];
 }
 
 function renderChainPanel(){
