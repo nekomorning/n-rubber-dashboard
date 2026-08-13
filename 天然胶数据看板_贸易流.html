@@ -229,6 +229,8 @@ body.p6 .card .cap{font-size:10px; line-height:1.25; margin:1px 0 2px;}
 .chain-toggle button.active{background:var(--accent); color:#fff; font-weight:600;}
 .chain-toggle button:hover:not(.active){background:#eef2f7;}
 .grid.chart-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.chain-filter-bar{display:flex; gap:6px; align-items:center; padding:6px 10px; background:#fff; border:1px solid var(--border); border-radius:8px; margin-bottom:6px;}
+.chain-filter-bar select{font-size:13px; padding:3px 6px; border:1px solid var(--border); border-radius:6px; background:#fff; color:var(--txt);}
 @media (max-width:980px){ .grid.chart-row{grid-template-columns:1fr;} }
 table.chain-tbl{width:100%;border-collapse:collapse;font-size:12px;background:#fff;}
 table.chain-tbl th{position:sticky;top:0;z-index:3;background:var(--accent);color:#fff;font-weight:600;padding:5px 8px;border:1px solid #dfe5ef;white-space:nowrap;}
@@ -280,6 +282,12 @@ table.chain-tbl td.net-neg{color:#C62828; font-weight:600;}
       <h2>月度数据表（单位：万吨）<span style="font-size:12px;color:var(--sub);font-weight:400">（向上滚动查看历史月份；正=净出口/净进口，值颜色：正绿负红）</span></h2>
       <div class="tbl-scroll" id="chainMonthlyScroll2" style="max-height:340px;overflow-y:auto;"><table class="chain-tbl" id="chainMonthlyTable2"></table></div>
     </div>
+
+    <!-- 区间筛选（同比对照）+ 区间累计表 -->
+    <div class="section-title">区间筛选（同比对照）<span style="font-size:12px;color:var(--sub);font-weight:400">（默认当年 1 月至最新月；按区间累计 = 当年与上年同月份区间合计；列结构与所选子页一致）</span></div>
+    <div class="chain-filter-bar" id="chainFilterBar"></div>
+    <div class="tbl-scroll" id="chainRangeScroll" style="max-height:none;overflow:auto;"><table class="chain-tbl" id="chainRangeTable"></table></div>
+    <div class="row-label" id="chainRangeNote" style="margin:4px 0 14px;"></div>
 
     <!-- 年度累计合计表（月度表下方，黑字） -->
     <div class="tablecard">
@@ -621,7 +629,7 @@ function renderChainSubjects(){
     return '<span class="csub'+(s===chainSubject?' active':'')+'" onclick="chainSwitchSubject(\''+s+'\')">'+s+'</span>';
   }).join('');
 }
-function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainMonthly2(); renderChainAnnual(); renderChainCharts(); renderChainSeasonal(); }
+function chainSwitchSubject(s){ chainSubject=s; renderChainSubjects(); renderChainMonthly(); renderChainMonthly2(); renderChainAnnual(); renderChainRange(); renderChainCharts(); renderChainSeasonal(); }
 function renderChainMonthlyTo(tid, sid){
   var cols=chainCols(), ms=CHAIN.months||[];
   var head='<thead><tr><th class="date-col">日期</th>';
@@ -779,6 +787,91 @@ function chainValBySubject(subj, m){
   var s=(CHAIN.net[key]||{})['合计'];
   return s ? s[m] : null;
 }
+
+// ===== 区间筛选 + 区间累计表（同比对照）=====
+function inRangeMonth(y,m,sy,sm,ey,em){
+  if(y<sy||y>ey) return false;
+  if(y===sy && m<sm) return false;
+  if(y===ey && m>em) return false;
+  return true;
+}
+function aggChainRange(sy,sm,ey,em,col){
+  var s=0, has=false;
+  (CHAIN.months||[]).forEach(function(m){
+    var y=+m.slice(0,4), mo=+m.slice(5,7);
+    if(inRangeMonth(y,mo,sy,sm,ey,em)){
+      var v=chainVal(col, m);
+      if(v!==null && v!==undefined){ s+=v; has=true; }
+    }
+  });
+  return has ? +s.toFixed(4) : null;
+}
+function renderChainFilterBar(){
+  var box=document.getElementById('chainFilterBar'); if(!box) return;
+  var years=CHAIN.years||[];
+  var moOpts=''; for(var mo=1;mo<=12;mo++) moOpts+='<option value="'+mo+'">'+mo+'月</option>';
+  box.innerHTML=
+    '<span class="lbl">从</span>'+
+    '<select id="chainRangeStartYear"></select><select id="chainRangeStartMonth">'+moOpts+'</select>'+
+    '<span style="margin:0 6px;">→</span><span class="lbl">到</span>'+
+    '<select id="chainRangeEndYear"></select><select id="chainRangeEndMonth">'+moOpts+'</select>';
+  var fY=document.getElementById('chainRangeStartYear'), tY=document.getElementById('chainRangeEndYear');
+  years.forEach(function(y){ fY.add(new Option(y,y)); tY.add(new Option(y,y)); });
+  // 默认：当年 1 月至最新月（最新月取 CHAIN.months 末位）
+  var latestM=(CHAIN.months||[])[(CHAIN.months||[]).length-1] || '';
+  var latest=latestM.split('-');
+  fY.value=latest[0] || years[years.length-1] || '';
+  tY.value=latest[0] || years[years.length-1] || '';
+  document.getElementById('chainRangeStartMonth').value='1';
+  document.getElementById('chainRangeEndMonth').value=latest[1] ? (+latest[1]).toString() : '12';
+  [fY,tY,document.getElementById('chainRangeStartMonth'),document.getElementById('chainRangeEndMonth')].forEach(function(s){
+    s.onchange=renderChainRange;
+  });
+}
+function renderChainRange(){
+  var fY=document.getElementById('chainRangeStartYear'); if(!fY) return;
+  var sy=+fY.value, sm=+document.getElementById('chainRangeStartMonth').value;
+  var ey=+document.getElementById('chainRangeEndYear').value, em=+document.getElementById('chainRangeEndMonth').value;
+  if(sy>ey || (sy===ey && sm>em)){
+    document.getElementById('chainRangeTable').innerHTML='<tbody><tr><td>起始时间不能晚于结束时间</td></tr></tbody>';
+    return;
+  }
+  var cols=chainCols();
+  var sel=cols.map(function(c){ return aggChainRange(sy,sm,ey,em,c); });
+  var lst=cols.map(function(c){ return aggChainRange(sy-1,sm,ey-1,em,c); });
+  var diff=cols.map(function(c,i){ return (sel[i]===null||lst[i]===null)?null:+(sel[i]-lst[i]).toFixed(4); });
+  var pct=cols.map(function(c,i){
+    if(diff[i]===null||lst[i]===null||lst[i]===0) return null;
+    return diff[i]/Math.abs(lst[i])*100;
+  });
+  var head='<thead><tr><th class="date-col">指标</th>';
+  cols.forEach(function(c){ head+='<th class="'+chainHeadCls(c)+'">'+c+'</th>'; });
+  head+='</tr></thead>';
+  function row(name, arr, isPct){
+    var r='<tr><td class="date-col">'+name+'</td>';
+    arr.forEach(function(v,i){
+      var c=cols[i];
+      var sty=chainTdCls(c);
+      var cls='';
+      var s='';
+      if(v===null||v===undefined){ s=''; cls='val-null'; }
+      else if(isPct){ s=(v>=0?'+':'')+v.toFixed(1)+'%'; cls='net-'+(v>=0?'pos':'neg'); }
+      else { s=chainFmt(v); cls='net-'+(v>=0?'pos':'neg'); }
+      r+='<td class="'+sty+' '+cls+'">'+s+'</td>';
+    });
+    return r+'</tr>';
+  }
+  var body='<tbody>';
+  body+=row('上年同期累计', lst, false);
+  body+=row('当年累计', sel, false);
+  body+=row('同比增减值', diff, false);
+  body+=row('同比增减%', pct, true);
+  body+='</tbody>';
+  document.getElementById('chainRangeTable').innerHTML=head+body;
+  document.getElementById('chainRangeNote').textContent=
+    '区间 '+sy+'年'+sm+'月 至 '+ey+'年'+em+'月 · 区间累计（月相加）；同比对照为去年同期同区间累计；列结构与所选子页面一致';
+}
+
 function renderChainSeasonal(){
   var grid=document.getElementById('chainSeasonGrid'); if(!grid) return;
   if(typeof echarts==='undefined') return;
@@ -847,6 +940,8 @@ function renderChainPanel(){
   renderChainMonthly2();
   renderChainCharts();
   renderChainSeasonal();
+  renderChainFilterBar();     // 区间筛选 select（只首次渲染一次，cols 变化时仅重算表）
+  renderChainRange();
   // 切换按钮绑定
   document.querySelectorAll('#chainToggle button').forEach(function(b){
     b.onclick=function(){ chainToggleMode(b.dataset.mode); };
