@@ -200,11 +200,14 @@ function lineChartOption(ind){
     return {name:c, type:"line", showSymbol:false, connectNulls:true, data:pts,
       lineStyle:{width:1.8, color:col}, itemStyle:{color:col}, emphasis:{focus:"series"}};
   }).filter(Boolean);
+  // 默认隐藏 菲律宾/斯里兰卡（图例可点击恢复显示）
+  var legendSelected={};
+  D.chartCountries.forEach(function(c){ legendSelected[c] = (c!=="菲律宾" && c!=="斯里兰卡"); });
   return {
     animation:false,
     tooltip:{trigger:"axis", confine:true,
       formatter:function(ps){ if(!ps.length) return ""; var s=ps[0].axisValue+"年"; ps.forEach(function(p){ s+="<br>"+p.marker+p.seriesName+"： <b>"+fmt(p.value[1], ind==="开割率"?"pct":"num")+"</b>"; }); return s; }},
-    legend:{show:true, top:0, type:"scroll", textStyle:{fontSize:10,color:"#6b7686"}},
+    legend:{show:true, top:0, type:"scroll", textStyle:{fontSize:10,color:"#6b7686"}, selected:legendSelected},
     grid:{left:8, right:10, top:34, bottom:26, containLabel:true},
     xAxis:{type:"category", data:D.years.map(String), axisLabel:{interval:1, fontSize:10, color:"#8a93a3"},
       axisTick:{show:false}, axisLine:{lineStyle:{color:"#dde3ec"}}, splitLine:{show:false}},
