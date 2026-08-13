@@ -961,17 +961,37 @@ function renderChainSeasonal(){
     allCharts.push(inst);
   });
 }
-// 国家子页：生成 4 张分项季节图（合计/天胶/半钢/全钢），标题按 export/import 区分出口/进口
+// 国家子页：生成 4 张分项季节图（合计/天胶/半钢/全钢）。
+// 三类口径标题：
+//   出口国（泰印越科）= 出口天胶+轮胎；中/韩/日/印 = 进口天胶+出口轮胎；美/欧盟 = 进口天胶+进口轮胎
 function renderCountrySeasonalSubjects(){
   var c=chainSubject, t=CHAIN.types[c]||'export';
-  var dir=(t==='export')?'出口':'进口';
   var net0=(CHAIN.net[c]||{});
   function get(part){ return function(m){ var v=net0[part]?net0[part][m]:null; return (v===null||v===undefined)?null:v; }; }
+  if(t==='export'){
+    // 泰/印/越/科：出口
+    return [
+      {label:c+'天胶+轮胎合计出口',    val:get('合计')},
+      {label:c+'天胶出口',             val:get('天胶')},
+      {label:c+'半钢出口折天胶',       val:get('半钢胎')},
+      {label:c+'全钢出口折天胶',       val:get('全钢胎')}
+    ];
+  }
+  if(c==='美国' || c==='欧盟'){
+    // 美/欧盟：进口天胶 + 进口轮胎
+    return [
+      {label:c+'天胶+轮胎合计进口',    val:get('合计')},
+      {label:c+'天胶进口',             val:get('天胶')},
+      {label:c+'半钢进口折天胶',       val:get('半钢胎')},
+      {label:c+'全钢进口折天胶',       val:get('全钢胎')}
+    ];
+  }
+  // 中/韩/日/印：进口天胶 + 出口轮胎
   return [
-    {label:c+'天胶+轮胎合计'+dir,    val:get('合计')},
-    {label:c+'天胶'+dir,             val:get('天胶')},
-    {label:c+'半钢'+dir+'折天胶',    val:get('半钢胎')},
-    {label:c+'全钢'+dir+'折天胶',    val:get('全钢胎')}
+    {label:c+'天胶进口-轮胎出口',     val:get('合计')},
+    {label:c+'天胶进口',              val:get('天胶')},
+    {label:c+'半钢出口折天胶',        val:get('半钢胎')},
+    {label:c+'全钢出口折天胶',        val:get('全钢胎')}
   ];
 }
 
