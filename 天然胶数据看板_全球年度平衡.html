@@ -57,11 +57,14 @@ table.data tbody tr:nth-child(even) td.tot{background:#e9eff8;}
 .collapse-btn .arrow{display:inline-block; transition:transform .2s; margin-left:6px; color:var(--sub);}
 .collapse-btn.open .arrow{transform:rotate(180deg);}
 table.data.collapsed tr.hist{display:none;}
-.chart-box{border:1px solid var(--border); border-radius:8px; background:var(--card); margin-top:8px;}
+.chart-box{position:relative; border:1px solid var(--border); border-radius:8px; background:var(--card); margin-top:8px;}
 .chart-box .chart-title{font-size:13px; color:var(--accent); font-weight:600; padding:10px 14px 0;}
 .chart-box .chart-sub{font-size:11px; color:var(--sub); padding:2px 14px 8px;}
 .chart-box .ech{width:100%; height:320px;}
 .chart-box .ech.tall{height:500px;}
+.chart-box .cal-note-out{position:absolute; top:-12px; right:0; z-index:2;
+  padding:3px 8px; background:#fff5f5; border:1px solid #d8392b; border-radius:3px;
+  font-size:10px; color:#d8392b; font-weight:700; line-height:1.2;}
 
 .footer{margin-top:30px; color:var(--sub); font-size:12px; text-align:center;}
 </style>
@@ -82,6 +85,7 @@ table.data.collapsed tr.hist{display:none;}
     <div class="chart-title">全球产量 · 消费量（折线，左轴） / 供需平衡（柱状，右轴）</div>
     <div class="chart-sub">万吨 · 2008 ~ 2027E（E 为预测）</div>
     <div class="ech" id="mainChart"></div>
+    <div class="cal-note-out">数据口径问题，0轴无意义，主要看变化趋势</div>
   </div>
   <div class="tbl-scroll" id="mainScroll"><table class="data collapsed" id="mainTable"></table></div>
 
@@ -234,17 +238,13 @@ function gbalChartOption(){
   function col(key){ return years.map(function(y){ return (D.main[y]&&D.main[y][key]!==undefined)?D.main[y][key]:null; }); }
   return {
     color:["#7FA996","#E08E8E","#5F7A8C"],
-    title:{text:"数据口径问题，0轴无意义，主要看变化趋势", right:4, top:2,
-      backgroundColor:"rgba(255,255,255,0.9)", borderColor:"#d8392b", borderWidth:1, padding:[2,5],
-      textStyle:{fontSize:10, color:"#d8392b", fontWeight:700}},
     tooltip:{trigger:"axis", axisPointer:{type:"shadow"}},
     legend:{data:["全球产量","全球消费量","供需平衡"], top:4, textStyle:{fontSize:12}},
     grid:{left:8, right:8, top:36, bottom:26, containLabel:true},
     xAxis:{type:"category", data:years, axisLabel:{interval:0, fontSize:11}},
     yAxis:[
       {type:"value", name:"万吨", min:600, max:1800, nameTextStyle:{color:"#6b7686"}, splitLine:{lineStyle:{color:"#e5e9f0"}}},
-      {type:"value", name:"万吨", nameLocation:"middle", nameGap:18,
-       nameTextStyle:{color:"#6b7686"}, splitLine:{show:false}}
+      {type:"value", name:"万吨", nameTextStyle:{color:"#6b7686"}, splitLine:{show:false}}
     ],
     series:[
       {name:"全球产量", type:"line", data:col("B"), showSymbol:true, symbolSize:6,
