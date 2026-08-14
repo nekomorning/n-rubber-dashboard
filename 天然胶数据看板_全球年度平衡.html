@@ -79,7 +79,7 @@ table.data.collapsed tr.hist{display:none;}
     <button class="collapse-btn" id="btnHist"><span id="histLabel">展开 2008–2016 历史数据（9 年）</span><span class="arrow">▾</span></button>
   </div>
   <div class="chart-box">
-    <div class="chart-title">全球产量 · 消费量（柱，左轴） / 供需平衡（折线，右轴）</div>
+    <div class="chart-title">全球产量 · 消费量（折线，左轴） / 供需平衡（柱状，右轴）</div>
     <div class="chart-sub">万吨 · 2008 ~ 2027E（E 为预测）</div>
     <div class="ech" id="mainChart"></div>
   </div>
@@ -243,10 +243,12 @@ function gbalChartOption(){
       {type:"value", name:"万吨", nameTextStyle:{color:"#6b7686"}, splitLine:{show:false}}
     ],
     series:[
-      {name:"全球产量", type:"bar", data:col("B"), barMaxWidth:26, itemStyle:{color:"#7FA996"}},
-      {name:"全球消费量", type:"bar", data:col("R"), barMaxWidth:26, itemStyle:{color:"#E08E8E"}},
-      {name:"供需平衡", type:"line", yAxisIndex:1, data:col("Q"),
-       showSymbol:true, symbolSize:5, lineStyle:{color:"#5F7A8C", width:2}, itemStyle:{color:"#5F7A8C"}}
+      {name:"全球产量", type:"line", data:col("B"), showSymbol:true, symbolSize:6,
+       lineStyle:{color:"#7FA996", width:2.5}, itemStyle:{color:"#7FA996"}, z:10},
+      {name:"全球消费量", type:"line", data:col("R"), showSymbol:true, symbolSize:6,
+       lineStyle:{color:"#E08E8E", width:2.5}, itemStyle:{color:"#E08E8E"}, z:9},
+      {name:"供需平衡", type:"bar", yAxisIndex:1, data:col("Q"), barMaxWidth:22,
+       itemStyle:{color:"#5F7A8C", opacity:.75}}
     ]
   };
 }
