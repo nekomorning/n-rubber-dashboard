@@ -150,16 +150,43 @@ function buildTabs(){
 /* ---------- 表头（两级：分组行 + 列名行） ---------- */
 function headCells(firstCol){
   var h="<tr><th class='yr-col' rowspan='2'>"+firstCol+"</th>";
-  D.groups.forEach(function(g){
+  // 分组行
+  for(var gi=0; gi<D.groups.length; gi++){
+    var g=D.groups[gi];
+    if(g.label.indexOf("总需求")>=0 && g.cols.length===1){
+      var next=D.groups[gi+1];
+      if(next && next.label.indexOf("消费")>=0){
+        // 总需求组 + 消费量组合并为「消费量（万吨）」colspan=1+6-1=6
+        h+="<th colspan='"+(g.cols.length + next.cols.length - 1)+"' style='background:"+gColor("消费量")+";color:#fff;'>消费量（万吨）</th>";
+        gi++;
+        continue;
+      }
+    }
     h+="<th colspan='"+g.cols.length+"' style='background:"+gColor(g.label)+";color:#fff;'>"+g.label+"</th>";
-  });
+  }
   h+="</tr><tr>";
-  D.groups.forEach(function(g){
+  // 列名行
+  for(var gi=0; gi<D.groups.length; gi++){
+    var g=D.groups[gi];
+    if(g.label.indexOf("总需求")>=0 && g.cols.length===1){
+      var next=D.groups[gi+1];
+      if(next && next.label.indexOf("消费")>=0){
+        // 总需求 R 列与消费量首列合并为 colspan=2 的「消费量（万吨）」
+        h+="<th class='tot' colspan='2' style='background:"+gColor("消费量")+";color:#fff;'>消费量（万吨）</th>";
+        // 消费量组剩余列
+        next.cols.slice(1).forEach(function(c){
+          var isTot=(c.key==='B'||c.key==='R');
+          h+="<th"+(isTot?" class='tot'":"")+" style='background:"+gColor(next.label)+";color:#fff;'>"+c.name+"</th>";
+        });
+        gi++;
+        continue;
+      }
+    }
     g.cols.forEach(function(c){
       var isTot=(c.key==='B'||c.key==='R');
       h+="<th"+(isTot?" class='tot'":"")+" style='background:"+gColor(g.label)+";color:#fff;'>"+c.name+"</th>";
     });
-  });
+  }
   return h+"</tr>";
 }
 function gColor(label){
@@ -177,14 +204,29 @@ function renderMain(){
   D.mainYears.forEach(function(y){
     var yNum=parseInt(y); var isHist=(yNum<=HIST_MAX);
     body+="<tr"+(isHist?" class='hist'":"")+"><td class='yr-col'>"+y+"</td>";
-    D.groups.forEach(function(g){
+    for(var gi=0; gi<D.groups.length; gi++){
+      var g=D.groups[gi];
+      // 特殊：总需求组 R 与消费量组首列合并 colspan=2（值为 R=消费合计）
+      if(g.label.indexOf("总需求")>=0 && g.cols.length===1){
+        var next=D.groups[gi+1];
+        if(next && next.label.indexOf("消费")>=0){
+          var v=D.main[y][g.cols[0].key];
+          body+="<td class='tot' colspan='2'>"+fmt(v,false)+"</td>";
+          next.cols.slice(1).forEach(function(c){
+            var v2=D.main[y][c.key];
+            body+="<td>"+fmt(v2,false)+"</td>";
+          });
+          gi++;
+          continue;
+        }
+      }
       g.cols.forEach(function(c){
         var v=D.main[y][c.key];
         var isTot=(c.key==='B'||c.key==='R');
         var st=(c.key==='Q') ? signStyle(v) : "";  // 仅供需平衡保留红绿，其余全黑字
         body+="<td"+(isTot?" class='tot'":"")+st+">"+fmt(v,false)+"</td>";
       });
-    });
+    }
     body+="</tr>";
   });
   body+="</tbody>";
