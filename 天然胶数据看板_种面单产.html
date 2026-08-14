@@ -250,27 +250,42 @@ function renderCountryBar(){
   pill("全部", null);
   D.chartCountries.forEach(function(c){ pill(c, c); });
 }
-var chartInsts=[];
-function renderCharts(){
-  if(typeof echarts==="undefined"||!D||!D.years) return;
-  chartInsts.forEach(function(c){ try{c.dispose();}catch(e){} });
-  chartInsts=[];
-  var grid=document.getElementById("chartGrid");
-  var grid2=document.getElementById("chartGrid2");
+var chartInsts=[];   // {ind, type, inst}，固定 5 张
+function buildChartCards(){
+  // 仅创建一次：3 堆积柱 + 2 折线 = 5 张固定卡片
+  var grid=document.getElementById("chartGrid"); grid.innerHTML='';
+  var grid2=document.getElementById("chartGrid2"); grid2.innerHTML='';
   ["总面积","新增面积","割胶面积"].forEach(function(ind){
     var card=document.createElement("div"); card.className="chart-card";
     var cap=document.createElement("div"); cap.className="cap"; cap.textContent=ind+"（各国堆积，千公顷）";
     var ech=document.createElement("div"); ech.className="ech";
     card.appendChild(cap); card.appendChild(ech); grid.appendChild(card);
-    var inst=echarts.init(ech); inst.setOption(barChartOption(ind)); chartInsts.push(inst);
+    var inst=echarts.init(ech);
+    inst.setOption(barChartOption(ind));
+    chartInsts.push({ind:ind, type:"bar", inst:inst});
   });
   ["开割率","亩产"].forEach(function(ind){
     var card=document.createElement("div"); card.className="chart-card";
     var cap=document.createElement("div"); cap.className="cap"; cap.textContent=ind+(ind==="开割率"?"（各国，%）":"（各国，kg/公顷）");
     var ech=document.createElement("div"); ech.className="ech";
     card.appendChild(cap); card.appendChild(ech); grid2.appendChild(card);
-    var inst=echarts.init(ech); inst.setOption(lineChartOption(ind)); chartInsts.push(inst);
+    var inst=echarts.init(ech);
+    inst.setOption(lineChartOption(ind));
+    chartInsts.push({ind:ind, type:"line", inst:inst});
   });
+}
+function renderCharts(){
+  if(typeof echarts==="undefined"||!D||!D.years) return;
+  // 已创建过 → 仅 setOption 更新数据/图例（filter 切换不会新增图表）
+  if(chartInsts.length){
+    chartInsts.forEach(function(c){
+      c.inst.setOption(c.type==="bar"?barChartOption(c.ind):lineChartOption(c.ind), true);
+    });
+    document.getElementById("chartSub").textContent=(D.globalNote||"")+" · 堆积柱状图：总面积 / 新增面积 / 割胶面积（各国堆积合计）；折线图：开割率 / 亩产（各国多线，不同颜色区分）";
+    return;
+  }
+  // 首次：构建 5 张固定卡片 + 创建 echarts 实例
+  buildChartCards();
   document.getElementById("chartSub").textContent=(D.globalNote||"")+" · 堆积柱状图：总面积 / 新增面积 / 割胶面积（各国堆积合计）；折线图：开割率 / 亩产（各国多线，不同颜色区分）";
 }
 
