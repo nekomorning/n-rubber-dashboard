@@ -313,8 +313,8 @@ function gdChartOption(){
     });
     var col = GD_YEAR_COLORS[y] || "#888";
     var isHi = (y==="2026E" || y==="2027E");
-    return {name:y, type:"bar", data:data, barMaxWidth:5,
-      stack:"delta", itemStyle:{color:col, borderColor:isHi?"#fff":"none",
+    return {name:y, type:"bar", data:data, barMaxWidth:6,
+      itemStyle:{color:col, borderColor:isHi?"#fff":"none",
         borderWidth:isHi?1.5:0, shadowBlur:isHi?8:0, shadowColor:isHi?col:"none"},
       emphasis:{focus:"series"}};
   });
