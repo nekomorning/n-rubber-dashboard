@@ -92,8 +92,8 @@ table.data.collapsed tr.hist{display:none;}
   </div>
   <div class="tbl-scroll" id="gdScroll"><table class="data" id="gdTable"></table></div>
   <div class="chart-box">
-    <div class="chart-title">全球产量 · 消费量（柱，左轴） / 供需平衡（折线，右轴）</div>
-    <div class="chart-sub">万吨 · 2008 ~ 2027E（E 为预测）</div>
+    <div class="chart-title" id="gdChartTitle">各国 2019 ~ 2027E 产量增速 %</div>
+    <div class="chart-sub" id="gdChartSub">% · 2019 ~ 2027E（E 为预测）</div>
     <div class="ech" id="gdChart"></div>
   </div>
 
@@ -249,15 +249,85 @@ function gbalChartOption(){
     ]
   };
 }
+
+/* ---------- 增速/增量图表：各国产量 2019-2027E ---------- */
+/* 国家选择：产量组 13 国（全球总产量 B + 科特迪瓦 C + 泰国/印尼/越南/马来/柬埔寨/缅甸/老挝/菲律宾/斯里兰卡/中国/印度），排除聚合列 D 东南亚合计 / P 亚洲其他 */
+var GD_CHART_YEARS = ["2019","2020","2021","2022","2023","2024","2025","2026E","2027E"];
+var GD_CHART_COUNTRIES = [
+  {key:"B", name:"全球总产量", color:"#2C3E50", isTot:true},
+  {key:"C", name:"科特迪瓦", color:"#7B241C"},
+  {key:"E", name:"泰国", color:"#C0392B"},
+  {key:"F", name:"印尼", color:"#E67E22"},
+  {key:"G", name:"越南", color:"#1ABC9C"},
+  {key:"H", name:"马来", color:"#F1C40F"},
+  {key:"I", name:"柬埔寨", color:"#E84393"},
+  {key:"J", name:"缅甸", color:"#D35400"},
+  {key:"K", name:"老挝", color:"#9B59B6"},
+  {key:"L", name:"菲律宾", color:"#8E44AD"},
+  {key:"M", name:"斯里兰卡", color:"#16A085"},
+  {key:"N", name:"中国", color:"#2980B9"},
+  {key:"O", name:"印度", color:"#2ECC71"},
+];
+function gdChartOption(){
+  var isPct = view==="pct";
+  var src = isPct ? D.growth : D.delta;
+  // 默认隐藏全球总产量 B（图例冗余参照），其他国家按各国显示
+  var legendSelected = {};
+  GD_CHART_COUNTRIES.forEach(function(c){ legendSelected[c.name] = !c.isTot; });
+  var series = GD_CHART_COUNTRIES.map(function(c){
+    var data = GD_CHART_YEARS.map(function(y){ return src[y]?src[y][c.key]:null; });
+    if(isPct){
+      return {
+        name:c.name, type:"line", data:data, showSymbol:true, symbolSize:5,
+        lineStyle:{width:1.6, color:c.color}, itemStyle:{color:c.color},
+        emphasis:{focus:"series"}, z: c.isTot?12:8
+      };
+    }
+    return {
+      name:c.name, type:"bar", data:data, barMaxWidth:6,
+      itemStyle:{color:c.color}, emphasis:{focus:"series"}
+    };
+  });
+  var label = isPct ? "增速 %" : "增量（万吨）";
+  var yAxisName = isPct ? "%（同比）" : "万吨（较上年绝对变化）";
+  return {
+    color: GD_CHART_COUNTRIES.map(function(c){return c.color;}),
+    tooltip:{trigger:"axis", axisPointer:isPct?{type:"line"}:{type:"shadow"}, confine:true,
+      valueFormatter:function(v){ return v===null||v===undefined?"—":(isPct?v.toFixed(1)+"%":v.toFixed(1)); }},
+    legend:{data:GD_CHART_COUNTRIES.map(function(c){return c.name;}), top:4,
+      type:"scroll", textStyle:{fontSize:10, color:"#6b7686"}, selected:legendSelected},
+    grid:{left:8, right:8, top:48, bottom:26, containLabel:true},
+    xAxis:{type:"category", data:GD_CHART_YEARS,
+      axisLabel:{interval:0, fontSize:11, color:"#8a93a3"},
+      axisTick:{show:false}, axisLine:{lineStyle:{color:"#dde3ec"}}, splitLine:{show:false}},
+    yAxis:{type:"value", name:yAxisName, nameTextStyle:{color:"#6b7686"},
+      axisLabel:{fontSize:10, color:"#8a93a3"},
+      splitLine:{lineStyle:{color:"#eef1f6"}}},
+    series:series
+  };
+}
+function applyGdChartTitle(){
+  var isPct = view==="pct";
+  document.getElementById("gdChartTitle").textContent =
+    isPct ? "各国 2019 ~ 2027E 产量增速 %（折线图）"
+          : "各国 2019 ~ 2027E 产量增量（柱状图，万吨）";
+  document.getElementById("gdChartSub").textContent =
+    isPct ? "% · 2019 ~ 2027E（E 为预测）· 红涨绿跌（同比）"
+          : "万吨 · 2019 ~ 2027E（E 为预测）· 正=较上年增加";
+}
 function renderCharts(){
   if(typeof echarts==="undefined"||!D||!D.main) return;
-  var opt=gbalChartOption();
-  ["mainChart","gdChart"].forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el) return;
-    var ch=echarts.init(el);
-    ch.setOption(opt);
-  });
+  var mainOpt=gbalChartOption();
+  var mainEl=document.getElementById("mainChart");
+  if(mainEl){
+    var ch=echarts.init(mainEl);
+    ch.setOption(mainOpt);
+  }
+  var gdEl=document.getElementById("gdChart");
+  if(gdEl){
+    var gd=echarts.init(gdEl);
+    gd.setOption(gdChartOption());
+  }
 }
 
 function init(){
@@ -268,8 +338,9 @@ function init(){
   renderMain();
   renderGd();
   bindHist();
-  document.getElementById("btnPct").onclick=function(){ view="pct"; renderGd(); };
-  document.getElementById("btnDelta").onclick=function(){ view="delta"; renderGd(); };
+  document.getElementById("btnPct").onclick=function(){ view="pct"; renderGd(); applyGdChartTitle(); renderCharts(); };
+  document.getElementById("btnDelta").onclick=function(){ view="delta"; renderGd(); applyGdChartTitle(); renderCharts(); };
+  applyGdChartTitle();
   renderCharts();
 }
 init();
