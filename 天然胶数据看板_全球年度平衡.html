@@ -159,10 +159,10 @@ function headCells(firstCol){
   return h+"</tr>";
 }
 function gColor(label){
-  if(label.indexOf("产量")>=0) return "#6E8FB3";      // 雾蓝
+  if(label.indexOf("产量")>=0) return "#7FA996";      // 浅绿
   if(label.indexOf("供需平衡")>=0) return "#5F7A8C";   // 石蓝灰
-  if(label.indexOf("总需求")>=0) return "#C2936A";    // 暖杏橙
-  if(label.indexOf("消费")>=0) return "#7FA996";       // 鼠尾草绿
+  if(label.indexOf("总需求")>=0) return "#E08E8E";    // 浅红
+  if(label.indexOf("消费")>=0) return "#E08E8E";       // 浅红
   return "#0f4c81";
 }
 
@@ -233,7 +233,7 @@ function gbalChartOption(){
   var years=D.mainYears.map(String);
   function col(key){ return years.map(function(y){ return (D.main[y]&&D.main[y][key]!==undefined)?D.main[y][key]:null; }); }
   return {
-    color:["#6E8FB3","#C2936A","#5F7A8C"],
+    color:["#7FA996","#E08E8E","#5F7A8C"],
     tooltip:{trigger:"axis", axisPointer:{type:"shadow"}},
     legend:{data:["全球产量","全球消费量","供需平衡"], top:4, textStyle:{fontSize:12}},
     grid:{left:8, right:8, top:36, bottom:26, containLabel:true},
@@ -243,8 +243,8 @@ function gbalChartOption(){
       {type:"value", name:"万吨", nameTextStyle:{color:"#6b7686"}, splitLine:{show:false}}
     ],
     series:[
-      {name:"全球产量", type:"bar", data:col("B"), barMaxWidth:26, itemStyle:{color:"#6E8FB3"}},
-      {name:"全球消费量", type:"bar", data:col("R"), barMaxWidth:26, itemStyle:{color:"#C2936A"}},
+      {name:"全球产量", type:"bar", data:col("B"), barMaxWidth:26, itemStyle:{color:"#7FA996"}},
+      {name:"全球消费量", type:"bar", data:col("R"), barMaxWidth:26, itemStyle:{color:"#E08E8E"}},
       {name:"供需平衡", type:"line", yAxisIndex:1, data:col("Q"),
        showSymbol:true, symbolSize:5, lineStyle:{color:"#5F7A8C", width:2}, itemStyle:{color:"#5F7A8C"}}
     ]
