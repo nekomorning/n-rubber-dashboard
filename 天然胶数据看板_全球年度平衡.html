@@ -234,9 +234,11 @@ function gbalChartOption(){
   function col(key){ return years.map(function(y){ return (D.main[y]&&D.main[y][key]!==undefined)?D.main[y][key]:null; }); }
   return {
     color:["#7FA996","#E08E8E","#5F7A8C"],
+    title:{text:"数据口径问题，0轴无意义，主要看变化趋势", left:"center", top:0,
+      textStyle:{fontSize:11, color:"#d8392b", fontWeight:700}},
     tooltip:{trigger:"axis", axisPointer:{type:"shadow"}},
-    legend:{data:["全球产量","全球消费量","供需平衡"], top:4, textStyle:{fontSize:12}},
-    grid:{left:8, right:8, top:36, bottom:26, containLabel:true},
+    legend:{data:["全球产量","全球消费量","供需平衡"], top:18, textStyle:{fontSize:12}},
+    grid:{left:8, right:8, top:52, bottom:26, containLabel:true},
     xAxis:{type:"category", data:years, axisLabel:{interval:0, fontSize:11}},
     yAxis:[
       {type:"value", name:"万吨", min:600, max:1800, nameTextStyle:{color:"#6b7686"}, splitLine:{lineStyle:{color:"#e5e9f0"}}},
