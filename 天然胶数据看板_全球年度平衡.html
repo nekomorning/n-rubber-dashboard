@@ -252,7 +252,7 @@ function gbalChartOption(){
 }
 
 /* ---------- 增速/增量图表：各国产量 2019-2027E ---------- */
-/* 国家顺序：全球总产量在前，其他按产量组原顺序；增速默认显示 5 国（全球总产量+科特迪瓦+泰国+印尼+越南），其他图例点击恢复 */
+/* 国家顺序：全球总产量在前，其他按产量组原顺序；剔除菲律宾/斯里兰卡，11 国；增速默认显示 5 国（全球总产量+科特迪瓦+泰国+印尼+越南），其他图例点击恢复 */
 var GD_CHART_YEARS = ["2019","2020","2021","2022","2023","2024","2025","2026E","2027E"];
 var GD_CHART_COUNTRIES = [
   {key:"B", name:"全球总产量", color:"#2C3E50", isTot:true, defaultShow:true},
@@ -260,19 +260,17 @@ var GD_CHART_COUNTRIES = [
   {key:"E", name:"泰国", color:"#C0392B", defaultShow:true},
   {key:"F", name:"印尼", color:"#E67E22", defaultShow:true},
   {key:"G", name:"越南", color:"#1ABC9C", defaultShow:true},
-  {key:"H", name:"马来", color:"#F1C40F", defaultShow:false},
+  {key:"H", name:"马来", color:"#3498DB", defaultShow:false},
   {key:"I", name:"柬埔寨", color:"#E84393", defaultShow:false},
   {key:"J", name:"缅甸", color:"#D35400", defaultShow:false},
   {key:"K", name:"老挝", color:"#9B59B6", defaultShow:false},
-  {key:"L", name:"菲律宾", color:"#8E44AD", defaultShow:false},
-  {key:"M", name:"斯里兰卡", color:"#16A085", defaultShow:false},
   {key:"N", name:"中国", color:"#2980B9", defaultShow:false},
   {key:"O", name:"印度", color:"#2ECC71", defaultShow:false},
 ];
-// 增量模式年份配色（2026E/2027E 醒目色：橙色/红色突出预测年）
+// 增量模式年份配色（蓝→青→绿→黄→橙→红→深红→紫红 渐变；2026E 深红+白边+阴影，2027E 紫红+白边+阴影，明显区分）
 var GD_YEAR_COLORS = {
-  "2019":"#6E8FB3","2020":"#7FA996","2021":"#9B8FC2","2022":"#5F7A8C","2023":"#A8B5C0",
-  "2024":"#7B8794","2025":"#E67E22","2026E":"#C0392B","2027E":"#922B21",
+  "2019":"#3498DB","2020":"#1ABC9C","2021":"#2ECC71","2022":"#F1C40F","2023":"#E67E22",
+  "2024":"#D35400","2025":"#E74C3C","2026E":"#C0392B","2027E":"#8E44AD",
 };
 function gdChartOption(){
   var isPct = view==="pct";
