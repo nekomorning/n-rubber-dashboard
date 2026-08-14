@@ -234,15 +234,17 @@ function gbalChartOption(){
   function col(key){ return years.map(function(y){ return (D.main[y]&&D.main[y][key]!==undefined)?D.main[y][key]:null; }); }
   return {
     color:["#7FA996","#E08E8E","#5F7A8C"],
-    title:{text:"数据口径问题，0轴无意义，主要看变化趋势", right:4, top:14,
-      textStyle:{fontSize:11, color:"#d8392b", fontWeight:700}},
+    title:{text:"数据口径问题，0轴无意义，主要看变化趋势", right:4, top:2,
+      backgroundColor:"rgba(255,255,255,0.9)", borderColor:"#d8392b", borderWidth:1, padding:[2,5],
+      textStyle:{fontSize:10, color:"#d8392b", fontWeight:700}},
     tooltip:{trigger:"axis", axisPointer:{type:"shadow"}},
     legend:{data:["全球产量","全球消费量","供需平衡"], top:4, textStyle:{fontSize:12}},
     grid:{left:8, right:8, top:36, bottom:26, containLabel:true},
     xAxis:{type:"category", data:years, axisLabel:{interval:0, fontSize:11}},
     yAxis:[
       {type:"value", name:"万吨", min:600, max:1800, nameTextStyle:{color:"#6b7686"}, splitLine:{lineStyle:{color:"#e5e9f0"}}},
-      {type:"value", name:"万吨", nameTextStyle:{color:"#6b7686"}, splitLine:{show:false}}
+      {type:"value", name:"万吨", nameLocation:"middle", nameGap:18,
+       nameTextStyle:{color:"#6b7686"}, splitLine:{show:false}}
     ],
     series:[
       {name:"全球产量", type:"line", data:col("B"), showSymbol:true, symbolSize:6,
