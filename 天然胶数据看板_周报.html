@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>天然胶数据看板 · 周报</title>
+<title>天然胶周报</title>
 <style>
 :root{
   --bg:#f4f6fa; --card:#ffffff; --border:#e5e9f0; --text:#1f2733; --sub:#6b7686;
@@ -103,7 +103,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 <body>
 <div class="wrap">
   <div class="header">
-    <h1>天然胶数据看板</h1>
+    <h1 id="pageTitle">天然胶周报_<span id="pageDate"></span></h1>
     <span class="date">数据截止：<span id="latestDate"></span></span>
   </div>
   <div class="tabs" id="tabs"></div>
@@ -390,9 +390,8 @@ async function exportPDF(){
     var jsPDF=window.jspdf.jsPDF;
     var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
     var pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight(), margin=8, pxPerMm=3.7795;
-    var today=new Date();
-    var exportDate=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-    var titleText='天然胶数据看板 · 周报_'+exportDate;
+    var exportDate=todayYMD();
+    var titleText='天然胶周报_'+exportDate;
     var cover=document.createElement('div');
     cover.style.cssText='position:fixed;left:-9999px;top:0;width:'+((pageW-margin*2)*pxPerMm)+'px;background:#fff;padding:20px;font-family:"Microsoft YaHei",PingFang SC,sans-serif;box-sizing:border-box;';
     var note=document.getElementById('noteInput').value.trim();
@@ -434,9 +433,14 @@ function saveLayout(){
 }
 
 /* ===== 初始化 ===== */
+function todayYMD(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function init(){
   if(!WEEKLY||!WEEKLY.sections) return;
   renderNav();
+  document.getElementById('pageDate').textContent=todayYMD();
   document.getElementById('latestDate').textContent=WEEKLY.latestDataDate||'';
   var saved=null; try{ saved=JSON.parse(localStorage.getItem('nr_weekly_payload')||'null'); }catch(e){}
   if(saved&&saved.layout&&saved.layout.length){
