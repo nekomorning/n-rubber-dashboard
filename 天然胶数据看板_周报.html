@@ -78,7 +78,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 .sec--images{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:8px;}
 .sec--images.full{grid-template-columns:1fr;}
 .sec--images img{width:100%; border:1px solid var(--border); border-radius:6px; display:block;}
-.citem{border:1px solid var(--border); border-radius:6px; padding:8px 9px 6px; background:#fff;}
+.citem{border:1px solid var(--border); border-radius:6px; padding:8px 9px 6px; background:#fff; overflow:hidden; display:flex; flex-direction:column;}
 .citem .ttl{font-size:12px; color:var(--text); font-weight:600; margin-bottom:2px;}
 .citem .meta{font-size:11px; color:var(--sub); margin-bottom:4px; line-height:1.5;}
 .citem .meta .val{font-size:14px; color:var(--text); font-weight:700;}
@@ -88,7 +88,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 .citem .meta .chg.down{color:var(--down);}
 .citem .meta .chg.flat{color:var(--flat);}
 .citem .meta .dt{display:block; color:#aab2bf; font-size:10px;}
-.citem .chart{width:100%; height:190px;}
+.citem .chart{width:100%; height:178px; min-height:0; flex:0 0 auto;}
 .custom-tip{border:1px dashed var(--border); border-radius:6px; padding:18px; text-align:center; color:var(--sub); font-size:12px; grid-column:1 / -1;}
 
 /* fmtNote 文本着色（红涨绿跌 / 重点） */
@@ -364,6 +364,7 @@ function renderCanvas(){
   document.getElementById('secCount').textContent=selected.length;
   if(!selected.length){ wrap.innerHTML='<div class="empty-tip">从上方板块库点击添加板块到画布</div>'; return; }
   wrap.innerHTML='';
+  /* 第一遍：创建 DOM、应用网格，但不初始化图表，确保容器尺寸已最终确定 */
   selected.forEach(function(sec,idx){
     var div=document.createElement('div'); div.className='sec'; div.setAttribute('data-idx',idx);
     div.innerHTML=
@@ -390,13 +391,22 @@ function renderCanvas(){
         chartBox.appendChild(card);
         var el=card.querySelector('.chart');
         if(oneChart) el.style.height='300px';   // 单图铺满放大
-        var ch=echarts.init(el); ch.setOption(buildOption(c)); charts.push(ch);
       });
       applyGrid(chartBox, sec.chart_ids.length);  // 按图数灵活排布列数
     }
     var imgBox=div.querySelector('.sec--images');
     if(String(sec.id).indexOf('custom_')===0) imgBox.classList.add('full');
     if(sec.images&&sec.images.length){ imgBox.style.display='grid'; imgBox.innerHTML=sec.images.map(function(src){return '<img src="'+esc(src)+'">';}).join(''); }
+  });
+  /* 第二遍：在最终尺寸确定后再初始化 ECharts，避免画布尺寸与容器错位导致溢出 */
+  selected.forEach(function(sec,idx){
+    if(!sec.chart_ids.length) return;
+    sec.chart_ids.forEach(function(cid,i){
+      var c=WEEKLY.charts[cid]; if(!c) return;
+      var el=document.getElementById('wchart_'+idx+'_'+i);
+      if(!el) return;
+      var ch=echarts.init(el); ch.setOption(buildOption(c)); charts.push(ch);
+    });
   });
 }
 
@@ -439,7 +449,7 @@ function buildOption(c){
         endLabel:{show:isLast,fontSize:10,color:yearColor(y),formatter:function(p){return fmt(p.value[1],c.dec);}}});
     }
   });
-  var grid={left:8,right:14,top:26,bottom:4,containLabel:true};
+  var grid={left:10,right:20,top:28,bottom:10,containLabel:true};
   var legendOpt={show:true,top:0,right:0,itemWidth:14,itemHeight:2,icon:'rect',textStyle:{fontSize:11,color:'#6b7686'},data:legend};
   if(c.bar){
     return {animation:false,grid:grid,legend:legendOpt,tooltip:{trigger:'axis',confine:true,valueFormatter:function(v){return v===null?'—':v;}},
