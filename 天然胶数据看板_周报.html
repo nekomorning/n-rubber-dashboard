@@ -441,12 +441,10 @@ function buildOption(c){
       series.push({name:y,type:'bar',data:ydata.map(function(p){return p?p[1]:null;}),itemStyle:{color:yearColor(y)},barWidth:'50%',label:{show:false}});
     } else if(monthly){
       series.push({name:y,type:'line',showSymbol:false,connectNulls:true,data:ydata.map(function(p){return p?p[1]:null;}),
-        lineStyle:{width:isLast?2.4:1.4,color:yearColor(y)},itemStyle:{color:yearColor(y)},emphasis:{focus:'series'},z:isLast?10:5,
-        endLabel:{show:isLast,fontSize:10,color:yearColor(y),formatter:function(p){return fmt(p.value,c.dec);}}});
+        lineStyle:{width:isLast?2.4:1.4,color:yearColor(y)},itemStyle:{color:yearColor(y)},emphasis:{focus:'series'},z:isLast?10:5});
     } else {
       series.push({name:y,type:'line',showSymbol:false,connectNulls:true,data:ydata,
-        lineStyle:{width:isLast?2.4:1.4,color:yearColor(y)},itemStyle:{color:yearColor(y)},emphasis:{focus:'series'},z:isLast?10:5,
-        endLabel:{show:isLast,fontSize:10,color:yearColor(y),formatter:function(p){return fmt(p.value[1],c.dec);}}});
+        lineStyle:{width:isLast?2.4:1.4,color:yearColor(y)},itemStyle:{color:yearColor(y)},emphasis:{focus:'series'},z:isLast?10:5});
     }
   });
   var grid={left:10,right:20,top:28,bottom:10,containLabel:true};
