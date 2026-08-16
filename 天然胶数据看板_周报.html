@@ -87,7 +87,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 .citem .meta .chg.flat{color:var(--flat);}
 .citem .meta .dt{display:block; color:#aab2bf; font-size:10px;}
 .citem .chart{width:100%; height:190px;}
-.custom-tip{border:1px dashed var(--border); border-radius:6px; padding:18px; text-align:center; color:var(--sub); font-size:12px; grid-column:span 4;}
+.custom-tip{border:1px dashed var(--border); border-radius:6px; padding:18px; text-align:center; color:var(--sub); font-size:12px; grid-column:1 / -1;}
 
 /* fmtNote 文本着色（红涨绿跌 / 重点） */
 .note{font-size:12px; color:var(--sub); margin-top:12px; line-height:1.7;}
@@ -95,9 +95,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 #notePreview .down,.down{color:var(--down); font-weight:600;}
 #notePreview .key,.key{color:var(--accent); font-weight:700; text-decoration:underline;}
 
-@media (max-width:1100px){.sec--charts{grid-template-columns:repeat(3,1fr);}}
-@media (max-width:800px){.sec--charts{grid-template-columns:repeat(2,1fr);} .custom-tip{grid-column:span 2;}}
-@media (max-width:600px){.sec--charts{grid-template-columns:1fr;} .custom-tip{grid-column:span 1;}}
+/* 响应式由 JS 按图数动态设置 .sec--charts 列数（applyGrid），此处不再写死列数 */
 </style>
 </head>
 <body>
@@ -281,6 +279,40 @@ function addCustomSection(){
 /* ===== 画布渲染 ===== */
 var charts=[];
 function disposeAll(){ charts.forEach(function(c){try{c.dispose();}catch(e){}}); charts=[]; }
+/* 按图数 n 计算网格 [rows, cols]，精确命中：
+   1→1×1 | 2→1×2 | 3→1×3 | 4→2×2 | 5→2×3 | 6→2×3 | 7→2×4 | 8→2×4
+   | 9→3×3 | 10→2×5 | 11→3×4 | 12→3×4 | 13→3×5 | 16→4×4（n>1 排除单列竖条，行≤列宽屏偏好；n>16 自然延续：列上限随 √n 增长、最少浪费、行≤列） */
+function gridForN(n){
+  if(n<=1) return [1,1];
+  if(n<=3) return [1,n];
+  var cap=Math.max(5, Math.ceil(Math.sqrt(n)));
+  var best=[0,0], bestWaste=1e9;
+  for(var c=2;c<=cap;c++){
+    var r=Math.ceil(n/c);
+    if(r>c) continue;        // 行≤列（宽屏偏好）
+    if(r<2) continue;        // n≥4 至少 2 行，排除单列竖条
+    var waste=r*c-n;
+    if(waste<bestWaste || (waste===bestWaste && c<best[1])){ bestWaste=waste; best=[r,c]; }
+  }
+  return best;
+}
+/* 根据图数 n 与当前视口宽度设置 .sec--charts 列数（窄屏收敛列数） */
+function applyGrid(box, n){
+  var cols=gridForN(n)[1];
+  var w=window.innerWidth;
+  if(w<=600) cols=Math.min(cols,1);
+  else if(w<=800) cols=Math.min(cols,2);
+  else if(w<=1100) cols=Math.min(cols,3);
+  box.style.gridTemplateColumns='repeat('+cols+',1fr)';
+  box.dataset.n=n;
+}
+window.addEventListener('resize', function(){
+  document.querySelectorAll('#canvas .sec--charts').forEach(function(box){
+    var n=+box.dataset.n||0; if(n>0) applyGrid(box,n);
+  });
+  charts.forEach(function(ch){ try{ch.resize();}catch(e){} });
+});
+
 function renderCanvas(){
   disposeAll();
   var wrap=document.getElementById('canvas');
@@ -303,8 +335,9 @@ function renderCanvas(){
     if(sec.chart_ids.length===0){
       if(String(sec.id).indexOf('custom_')===0){
         chartBox.innerHTML = (sec.images&&sec.images.length)?'':'<div class="custom-tip">在此粘贴截图（Ctrl+V），图片将显示在该板块中</div>';
-      } else { chartBox.innerHTML='<div class="empty-tip" style="grid-column:span 4">（该板块无图表）</div>'; }
+      } else { chartBox.innerHTML='<div class="empty-tip" style="grid-column:1 / -1">（该板块无图表）</div>'; }
     } else {
+      var oneChart=(sec.chart_ids.length===1);
       sec.chart_ids.forEach(function(cid,i){
         var c=WEEKLY.charts[cid]; if(!c) return;
         var card=document.createElement('div'); card.className='citem';
@@ -312,8 +345,10 @@ function renderCanvas(){
           '<div class="chart" id="wchart_'+idx+'_'+i+'"></div>';
         chartBox.appendChild(card);
         var el=card.querySelector('.chart');
+        if(oneChart) el.style.height='300px';   // 单图铺满放大
         var ch=echarts.init(el); ch.setOption(buildOption(c)); charts.push(ch);
       });
+      applyGrid(chartBox, sec.chart_ids.length);  // 按图数灵活排布列数
     }
     var imgBox=div.querySelector('.sec--images');
     if(String(sec.id).indexOf('custom_')===0) imgBox.classList.add('full');
