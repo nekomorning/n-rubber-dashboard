@@ -655,17 +655,73 @@ function replaceDescForExport(container){
   return function restore(){ backups.forEach(function(b){ b.parent.replaceChild(b.ta,b.div); }); };
 }
 
+/* ===== 大容量存储：IndexedDB（用于含高清截图的布局 payload） ===== */
+var IDB_OK = ('indexedDB' in window);
+function idbOpen(){
+  return new Promise(function(res,rej){
+    var req=indexedDB.open('nr_weekly_db',1);
+    req.onupgradeneeded=function(){ req.result.createObjectStore('kv',{keyPath:'key'}); };
+    req.onsuccess=function(){ res(req.result); };
+    req.onerror=function(){ rej(req.error); };
+  });
+}
+function idbSet(key,val){
+  if(!IDB_OK) return Promise.reject(new Error('当前浏览器不支持 IndexedDB'));
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      var tx=db.transaction('kv','readwrite');
+      tx.objectStore('kv').put({key:key,val:val});
+      tx.oncomplete=function(){ res(); };
+      tx.onerror=function(){ rej(tx.error); };
+    }).then(function(){ db.close(); });
+  });
+}
+function idbGet(key){
+  if(!IDB_OK) return Promise.reject(new Error('当前浏览器不支持 IndexedDB'));
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      var tx=db.transaction('kv','readonly');
+      var r=tx.objectStore('kv').get(key);
+      r.onsuccess=function(){ res(r.result?r.result.val:null); };
+      r.onerror=function(){ rej(r.error); };
+    }).then(function(v){ db.close(); return v; });
+  });
+}
+
+/* 将已解析的 saved payload 应用到 selected（同步，复用渲染链路） */
+function applySaved(saved){
+  if(saved&&saved.layout&&saved.layout.length){
+    selected=saved.layout.map(function(x){
+      var s=findSec(x.id);
+      if(s){ return {id:s.id,name:s.name,desc:s.desc,chart_ids:s.chart_ids.slice(),tables:(s.tables||[]).slice(),rows:(s.rows||[]).slice(),charts_rendered:false,title:x.title||s.name,analysis:x.analysis||'',images:x.images||[]}; }
+      return {id:x.id,name:x.title||x.name||'新板块',desc:x.desc||'',chart_ids:(x.chart_ids||[]).slice(),tables:(x.tables||[]).slice(),rows:(x.rows||[]).slice(),charts_rendered:false,title:x.title||x.name||'新板块',analysis:x.analysis||'',images:x.images||[]};
+    }).filter(Boolean);
+  } else {
+    selected=(WEEKLY.defaultLayout||[]).map(function(id){ var s=findSec(id); return s?{id:s.id,name:s.name,desc:s.desc,chart_ids:s.chart_ids.slice(),tables:(s.tables||[]).slice(),rows:(s.rows||[]).slice(),charts_rendered:false,title:s.name,analysis:'',images:[]}:null; }).filter(Boolean);
+  }
+  if(saved&&saved.note!==undefined){ document.getElementById('noteInput').value=saved.note; }
+}
+
 /* ===== 保存布局到本地 ===== */
 function saveLayout(){
   var note=document.getElementById('noteInput').value;
   var payload={note:note,layout:selected.map(function(s){
     return {id:s.id,title:s.title,analysis:s.analysis,name:s.name,desc:s.desc,chart_ids:s.chart_ids.slice(),tables:(s.tables||[]).slice(),rows:(s.rows||[]).slice(),images:(s.images||[]).slice()};
   }),updatedAt:new Date().toISOString()};
-  try{
-    localStorage.setItem('nr_weekly_payload',JSON.stringify(payload));
-    localStorage.setItem('nr_weekly_note',note);
-    document.getElementById('saveStatus').textContent='✓ 布局已保存到本地（'+new Date().toLocaleString()+'），下次打开自动恢复';
-  }catch(e){ alert('保存失败：'+e.message); }
+  var el=document.getElementById('saveStatus');
+  // 文字笔记极小，仍存 localStorage 即可
+  try{ localStorage.setItem('nr_weekly_note',note); }catch(e){}
+  // 清掉旧版本遗留的 localStorage 布局，避免加载时先闪旧数据
+  try{ localStorage.removeItem('nr_weekly_payload'); }catch(e){}
+  // 布局（可能含多张高清截图 base64，体积大）→ 存 IndexedDB，避免 localStorage 约 5MB 配额超限
+  if(!IDB_OK){ alert('当前浏览器不支持 IndexedDB，无法保存含截图的布局。'); return; }
+  el.textContent='保存中…';
+  idbSet('nr_weekly_payload',payload).then(function(){
+    el.textContent='✓ 布局已保存到本地（'+new Date().toLocaleString()+'），含高清截图将自动恢复';
+  }).catch(function(err){
+    alert('保存失败：'+(err&&err.message?err.message:err));
+    el.textContent='✗ 保存失败，请重试';
+  });
 }
 
 /* ===== 初始化 ===== */
@@ -678,18 +734,16 @@ function init(){
   renderNav();
   document.getElementById('pageDate').textContent=todayYMD();
   document.getElementById('latestDate').textContent=WEEKLY.latestDataDate||'';
+  // 同步优先：localStorage 可能有旧的小体积 payload，或为空 → 先渲染默认/旧值（保证无 IndexedDB 环境可用）
   var saved=null; try{ saved=JSON.parse(localStorage.getItem('nr_weekly_payload')||'null'); }catch(e){}
-  if(saved&&saved.layout&&saved.layout.length){
-    selected=saved.layout.map(function(x){
-      var s=findSec(x.id);
-      if(s){ return {id:s.id,name:s.name,desc:s.desc,chart_ids:s.chart_ids.slice(),tables:(s.tables||[]).slice(),rows:(s.rows||[]).slice(),charts_rendered:false,title:x.title||s.name,analysis:x.analysis||'',images:x.images||[]}; }
-      return {id:x.id,name:x.title||x.name||'新板块',desc:x.desc||'',chart_ids:(x.chart_ids||[]).slice(),tables:(x.tables||[]).slice(),rows:(x.rows||[]).slice(),charts_rendered:false,title:x.title||x.name||'新板块',analysis:x.analysis||'',images:x.images||[]};
-    }).filter(Boolean);
-  } else {
-    selected=(WEEKLY.defaultLayout||[]).map(function(id){ var s=findSec(id); return s?{id:s.id,name:s.name,desc:s.desc,chart_ids:s.chart_ids.slice(),tables:(s.tables||[]).slice(),rows:(s.rows||[]).slice(),charts_rendered:false,title:s.name,analysis:'',images:[]}:null; }).filter(Boolean);
-  }
-  if(saved&&saved.note!==undefined){ document.getElementById('noteInput').value=saved.note; }
+  applySaved(saved);
   loadNote(); renderLib(); renderCanvas();
+  // 异步加载 IndexedDB 中的大体积布局（含高清截图），存在则覆盖（不闪存：仅当确有数据时重渲）
+  if(IDB_OK){
+    idbGet('nr_weekly_payload').then(function(dbSaved){
+      if(dbSaved&&dbSaved.layout&&dbSaved.layout.length){ applySaved(dbSaved); loadNote(); renderLib(); renderCanvas(); }
+    }).catch(function(){});
+  }
 }
 
 /* 粘贴截图到当前自定义板块 */
