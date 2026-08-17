@@ -771,9 +771,13 @@ document.addEventListener('paste',function(e){
       e.preventDefault();
       var blob=items[i].getAsFile(); var reader=new FileReader();
       reader.onload=function(ev){
-        selected[idx].images=selected[idx].images||[]; selected[idx].images.push(ev.target.result);
+        // 自定义板块内直接粘贴 = 替换原有截图（只保留最新一张）
+        selected[idx].images=[ev.target.result];
+        var chartBox=secEl.querySelector('.sec--charts');
+        var tip=chartBox&&chartBox.querySelector('.custom-tip');
+        if(tip) tip.style.display='none';
         var imgBox=secEl.querySelector('.sec--images'); imgBox.classList.add('full'); imgBox.style.display='grid';
-        imgBox.innerHTML=selected[idx].images.map(function(src){return '<img src="'+src+'">';}).join('');
+        imgBox.innerHTML='<img src="'+ev.target.result+'">';
       };
       reader.readAsDataURL(blob); break;
     }
