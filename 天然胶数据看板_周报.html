@@ -330,7 +330,7 @@ function renderLib(){
     var isCustom=String(sec.id).indexOf('custom_')===0;
     var isMerge=String(sec.id).indexOf('custom_merge_')===0;
     var s=findSec(sec.id);
-    var name=isCustom?sec.title:(s?s.name:sec.name);
+    var name=sec.title||(s?s.name:sec.name);
     var desc=isMerge?'合并板块':(isCustom?'自定义板块':(s?s.desc:sec.desc));
     var canUp=idx>0, canDown=idx<selected.length-1;
     var chk=checkedIds[sec.id]?'checked':'';
