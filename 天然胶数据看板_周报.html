@@ -605,15 +605,28 @@ async function exportPDF(){
     var availW=pageW-margin*2, availH=pageH-margin*2;
     var exportDate=todayYMD();
     var titleText='天然胶周报_'+exportDate;
-    /* 一页放一个板块：宽度撑满，高度不足拉伸填满、超出压缩到一页内，避免大片空白或拆成两页 */
+    /* 一页放一个板块：在整张 A4 横向页面内居中放置，优先保持原始比例。
+       当截图比例与页面比例接近（差异 <15%）时直接撑满整页；
+       当差异较大时按长边适配、短边留白，避免出现“挤得很窄/拉得很长”的明显变形。 */
     function placeImage(doc, canvas, firstPage){
-      var w=availW;
-      var hNat=canvas.height*w/canvas.width;
-      var h=hNat;
-      if(h<availH-0.5) h=availH;          // 拉伸填满（消除空白）
-      else if(h>availH+0.5) h=availH;     // 压缩到一页（避免溢出/拆页）
+      var pageRatio=availW/availH;
+      var imgRatio=canvas.width/canvas.height;
+      var ratioDiff=Math.abs(imgRatio-pageRatio)/pageRatio;
+      var w,h,x,y;
+      if(ratioDiff<0.15){
+        // 比例接近页面：直接撑满，变形可接受
+        w=availW; h=availH; x=margin; y=margin;
+      } else if(imgRatio>pageRatio){
+        // 截图偏宽偏矮：按宽度撑满，高度自适应并垂直居中（上下留白）
+        w=availW; h=w/imgRatio;
+        x=margin; y=margin+(availH-h)/2;
+      } else {
+        // 截图偏高偏窄：按高度撑满，宽度自适应并水平居中（左右留白）
+        h=availH; w=h*imgRatio;
+        x=margin+(availW-w)/2; y=margin;
+      }
       if(!firstPage) doc.addPage();
-      doc.addImage(canvas.toDataURL('image/png'),'PNG',margin,margin,w,h);
+      doc.addImage(canvas.toDataURL('image/png'),'PNG',x,y,w,h);
     }
     // 封面
     var cover=document.createElement('div');
