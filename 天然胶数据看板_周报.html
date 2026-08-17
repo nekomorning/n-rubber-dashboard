@@ -516,6 +516,7 @@ function fmt(v,dec){
 }
 function chgCls(c){ if(c===null||c===undefined||c===0) return 'flat'; return c>0?'up':'down'; }
 function arrow(c){ if(c===null||c===undefined||c===0) return '→'; return c>0?'▲':'▼'; }
+function shortDate(s){ if(!s) return ''; var m=String(s).match(/(\d{2})-(\d{2})$/); return m?m[0]:s; }
 function statsHtml(c){
   if(!c.stat) return '<span class="dt">暂无数据</span>';
   var st=c.stat;
@@ -530,11 +531,12 @@ function statsHtml(c){
       pctSpan('环比',st.pct)+pctSpan('同比',st.weekPct)+pctSpan('累计同比',st.ytdPct)+
       '<span class="dt">'+(st.latestDate||'')+'</span>';
   }
-  // 日度/周度板块：保持原有 最新值 + 周环比
+  // 日度/周度板块：保持原有 最新值 + 周环比（附对比日期，避免被误读为日环比）
   var cls=chgCls(st.weekChg);
+  var cmp = st.weekAgoDate ? ' / 较'+shortDate(st.weekAgoDate) : '';
   var chgTxt = (st.weekChg===null||st.weekChg===undefined)
     ? '—'
-    : arrow(st.weekChg)+' '+(st.weekChg>0?'+':'')+fmt(st.weekChg,c.dec)+'（'+(st.weekPct===null||st.weekPct===undefined?'—':(st.weekPct>0?'+':'')+st.weekPct.toFixed(2)+'%')+' 周环比）';
+    : arrow(st.weekChg)+' '+(st.weekChg>0?'+':'')+fmt(st.weekChg,c.dec)+'（'+(st.weekPct===null||st.weekPct===undefined?'—':(st.weekPct>0?'+':'')+st.weekPct.toFixed(2)+'%')+' 周环比'+cmp+'）';
   return '<span class="val">'+fmt(st.latest,c.dec)+'<span class="unit"> '+esc(c.unit)+'</span></span>'+
     '<span class="chg '+cls+'">'+chgTxt+'</span>'+
     '<span class="dt">'+(st.latestDate||'')+'</span>';
