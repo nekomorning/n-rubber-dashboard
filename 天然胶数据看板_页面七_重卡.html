@@ -133,6 +133,11 @@ tr.abn td{background:#fff7f0;}
 /* 一览表高亮列（页面五累计同比%）：表头与单元格加底色 + 强调 */
 #dataTable th.hl{background:var(--hl-bg); color:var(--hl-fg);}
 #dataTable td.hl{background:var(--hl-bg); font-weight:700;}
+/* 一览表默认折叠：仅保留标题栏 + 右上角展开/收起按钮 */
+.tablecard .tc-toggle{float:right; font-size:12px; font-weight:600; color:var(--accent); cursor:pointer;
+  border:1px solid var(--border); background:var(--card); border-radius:6px; padding:2px 10px; line-height:1.4; user-select:none;}
+.tablecard .tc-toggle:hover{background:#f0f4f9;}
+.tablecard.collapsed .latest-table-body{display:none;}
 
 .section-title{font-size:18px; color:var(--accent); font-weight:700; margin:26px 0 4px;
   padding-left:10px; border-left:4px solid var(--accent);}
@@ -328,8 +333,11 @@ table.chain-tbl td.net-down{color:#2E7D32; font-weight:600;}
 
   <div class="oni-block" id="oniBlock"></div>
 
-  <div class="tablecard" id="latestTableCard">
-    <h2>最新数据一览表 <span style="font-size:12px;color:var(--sub);font-weight:400" id="tableNote"></span></h2>
+  <div class="tablecard collapsed" id="latestTableCard">
+    <h2>最新数据一览表 <span style="font-size:12px;color:var(--sub);font-weight:400" id="tableNote"></span>
+      <button type="button" class="tc-toggle" id="tcToggle" onclick="toggleLatestTable()">▶ 展开</button>
+    </h2>
+    <div class="latest-table-body">
     <table id="dataTable">
       <thead><tr>
         <th>指标</th><th>单位</th><th>最新日期</th><th>最新值</th><th>前值</th><th>日环比增减</th><th>日环比%</th><th>标记</th>
@@ -337,6 +345,7 @@ table.chain-tbl td.net-down{color:#2E7D32; font-weight:600;}
       </tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 
   <div id="sections"></div>
@@ -443,6 +452,13 @@ function fmt(v,dec){
 }
 function chgCls(c){ if(c===null||c===undefined||c===0) return "flat"; return c>0?"up":"down"; }
 function arrow(c){ if(c===null||c===undefined||c===0) return "→"; return c>0?"▲":"▼"; }
+// 最新数据一览表：默认折叠，点击右上角按钮展开/收起
+function toggleLatestTable(){
+  var c=document.getElementById('latestTableCard'); if(!c) return;
+  var collapsed=c.classList.toggle('collapsed');
+  var btn=document.getElementById('tcToggle');
+  if(btn) btn.textContent = collapsed ? '▶ 展开' : '▼ 收起';
+}
 
 function init(){
   document.body.className = D.pageId || "";
