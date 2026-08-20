@@ -944,6 +944,40 @@ function renderChainRange(){
 // 12 月份标签（季节图共用）
 var months12=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
+// chain 季节图卡片 meta：最新值 / 环比% / 同比% / 累计同比%（按该图自身序列最新月独立计算）
+function chainSeasonMeta(subVal){
+  var ms=CHAIN.months||[];
+  var lastM=null, latest=null;
+  for(var i=ms.length-1;i>=0;i--){ var v=subVal(ms[i]); if(v!==null&&v!==undefined){ lastM=ms[i]; latest=v; break; } }
+  if(lastM===null) return null;
+  // 环比：最新月之前最近有值月
+  var idx=ms.indexOf(lastM), prevV=null;
+  for(var i=idx-1;i>=0;i--){ var v=subVal(ms[i]); if(v!==null&&v!==undefined){ prevV=v; break; } }
+  // 同比：去年同月
+  var y=+lastM.slice(0,4), mm=lastM.slice(5,7), yoyV=null;
+  var yk=(y-1)+"-"+mm;
+  if(ms.indexOf(yk)>=0){ var vv=subVal(yk); if(vv!==null&&vv!==undefined) yoyV=vv; }
+  // 累计：当年1月~最新月 vs 去年1月~同月
+  var lmm=+mm, ytdV=0, ytdLy=0;
+  ms.forEach(function(m){
+    var my=+m.slice(0,4), mo=+m.slice(5,7);
+    if(my===y && mo<=lmm){ var v=subVal(m); if(v!==null&&v!==undefined) ytdV+=v; }
+    if(my===y-1 && mo<=lmm){ var v=subVal(m); if(v!==null&&v!==undefined) ytdLy+=v; }
+  });
+  var chg=(prevV!=null&&latest!=null)?latest-prevV:null;
+  var pct=(chg!=null&&prevV)?chg/Math.abs(prevV)*100:null;
+  var ychg=(yoyV!=null&&latest!=null)?latest-yoyV:null;
+  var ypct=(ychg!=null&&yoyV)?ychg/Math.abs(yoyV)*100:null;
+  var ytdPct=(ytdLy)?(ytdV-ytdLy)/Math.abs(ytdLy)*100:null;
+  var pctSpan=function(lab,v){
+    if(v===null||v===undefined||isNaN(v)) return '<span class="chg flat">'+lab+' —</span>';
+    return '<span class="chg '+chgCls(v)+'">'+lab+' '+(v>0?"+":"")+v.toFixed(DEC_PCT)+'%</span>';
+  };
+  var metaHtml='<span class="val">'+fmt(latest,2)+'<span class="unit"> 万吨</span></span>'+
+    pctSpan("环比",pct)+pctSpan("同比",ypct)+pctSpan("累计同比",ytdPct);
+  return {last:lastM, metaHtml:metaHtml};
+}
+
 function renderChainSeasonal(){
   var grid=document.getElementById('chainSeasonGrid'); if(!grid) return;
   if(typeof echarts==='undefined') return;
@@ -961,6 +995,13 @@ function renderChainSeasonal(){
     var card=document.createElement('div'); card.className='card';
     var ttl=document.createElement('div'); ttl.className='ttl'; ttl.textContent=subLabel;
     card.appendChild(ttl);
+    // meta 行：最新值 / 环比% / 同比% / 累计同比%
+    var sm=chainSeasonMeta(subVal);
+    if(sm){
+      var meta=document.createElement('div'); meta.className='meta';
+      meta.innerHTML=sm.metaHtml;
+      card.appendChild(meta);
+    }
     var div=document.createElement('div'); div.style.width='100%'; div.style.height='200px';
     card.appendChild(div);
     grid.appendChild(card);
