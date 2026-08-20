@@ -604,6 +604,7 @@ function switchSub(pid){
 // ===== 天胶+轮胎合计（chain）渲染 =====
 var CHAIN = window.__CHAIN__ || null;
 var chainSubject = "汇总概览";
+var chainRangeTouched = false;   // 用户是否手动选择过时间区间（false=各列按自身最新月独立累计同比）
 var chainChartInst = null;
 var CHAIN_SUBJECTS = ["汇总概览","泰国","印尼","越南","科特迪瓦","中国","韩国","日本","印度","美国","欧盟"];
 function chainMonthLabel(m){ var p=/^(\d{4})-(\d{2})$/.exec(m); return p? (p[1]+'.'+parseInt(p[2],10)) : m; }
@@ -622,6 +623,12 @@ function chainCols(){
 function chainLatestVal(col){
   var ms=CHAIN.months||[];
   for(var i=ms.length-1;i>=0;i--){ var v=chainVal(col,ms[i]); if(v!==null&&v!==undefined) return v; }
+  return null;
+}
+function chainColLatestMonth(col){
+  /* 该列最后一个有值的月份（如 2026-07）；无值返回 null */
+  var ms=CHAIN.months||[];
+  for(var i=ms.length-1;i>=0;i--){ var v=chainVal(col,ms[i]); if(v!==null&&v!==undefined) return ms[i]; }
   return null;
 }
 // 表头 class：汇总概览按 export/import/sum 分组；国家子页按 type 给「合计」列
@@ -851,6 +858,7 @@ function pickDefaultEnd(){
   return ms[ms.length-1];
 }
 function renderChainFilterBar(){
+  chainRangeTouched=false;   // 重建筛选栏 = 回到「各列按自身最新月独立累计」模式
   var box=document.getElementById('chainFilterBar'); if(!box) return;
   var years=CHAIN.years||[];
   var moOpts=''; for(var mo=1;mo<=12;mo++) moOpts+='<option value="'+mo+'">'+mo+'月</option>';
@@ -869,7 +877,7 @@ function renderChainFilterBar(){
   document.getElementById('chainRangeStartMonth').value='1';
   document.getElementById('chainRangeEndMonth').value=latest[1] ? (+latest[1]).toString() : '12';
   [fY,tY,document.getElementById('chainRangeStartMonth'),document.getElementById('chainRangeEndMonth')].forEach(function(s){
-    s.onchange=renderChainRange;
+    s.onchange=function(){ chainRangeTouched=true; renderChainRange(); };
   });
 }
 function renderChainRange(){
@@ -881,13 +889,31 @@ function renderChainRange(){
     return;
   }
   var cols=chainCols();
-  var sel=cols.map(function(c){ return aggChainRange(sy,sm,ey,em,c); });
-  var lst=cols.map(function(c){ return aggChainRange(sy-1,sm,ey-1,em,c); });
-  var diff=cols.map(function(c,i){ return (sel[i]===null||lst[i]===null)?null:+(sel[i]-lst[i]).toFixed(4); });
-  var pct=cols.map(function(c,i){
-    if(diff[i]===null||lst[i]===null||lst[i]===0) return null;
-    return diff[i]/Math.abs(lst[i])*100;
-  });
+  var sel=[], lst=[], diff=[], pct=[], note='';
+  if(chainRangeTouched){
+    // 用户已选择区间：所有列统一按选定区间累计
+    sel=cols.map(function(c){ return aggChainRange(sy,sm,ey,em,c); });
+    lst=cols.map(function(c){ return aggChainRange(sy-1,sm,ey-1,em,c); });
+    diff=cols.map(function(c,i){ return (sel[i]===null||lst[i]===null)?null:+(sel[i]-lst[i]).toFixed(4); });
+    pct=cols.map(function(c,i){
+      if(diff[i]===null||lst[i]===null||lst[i]===0) return null;
+      return diff[i]/Math.abs(lst[i])*100;
+    });
+    note='区间 '+sy+'年'+sm+'月 至 '+ey+'年'+em+'月 · 区间累计（月相加）；同比对照为去年同期同区间累计；列结构与所选子页面一致';
+  }else{
+    // 未选择时间：各列按自身最新月份独立累计（当年1月 ~ 各列最新月；同比对照 = 去年 1 月 ~ 去年同月）
+    cols.forEach(function(c){
+      var lm=chainColLatestMonth(c);
+      if(!lm){ sel.push(null); lst.push(null); diff.push(null); pct.push(null); return; }
+      var ly=+lm.slice(0,4), lmo=+lm.slice(5,7);
+      var s=aggChainRange(ly,1,ly,lmo,c);
+      var l=aggChainRange(ly-1,1,ly-1,lmo,c);
+      sel.push(s); lst.push(l);
+      if(s===null||l===null||l===0){ diff.push(null); pct.push(null); }
+      else{ var d=+(s-l).toFixed(4); diff.push(d); pct.push(d/Math.abs(l)*100); }
+    });
+    note='未选择区间 · 各列按自身最新月份独立累计（当年 1 月至各列最新月；同比对照为去年同期同区间累计）。如需统一区间，请在上方选择时间';
+  }
   var head='<thead><tr><th class="date-col">指标</th>';
   cols.forEach(function(c){ head+='<th class="'+chainHeadCls(c)+'">'+c+'</th>'; });
   head+='</tr></thead>';
@@ -912,8 +938,7 @@ function renderChainRange(){
   body+=row('同比增减%', pct, true, true);         // 红涨绿跌
   body+='</tbody>';
   document.getElementById('chainRangeTable').innerHTML=head+body;
-  document.getElementById('chainRangeNote').textContent=
-    '区间 '+sy+'年'+sm+'月 至 '+ey+'年'+em+'月 · 区间累计（月相加）；同比对照为去年同期同区间累计；列结构与所选子页面一致';
+  document.getElementById('chainRangeNote').textContent=note;
 }
 
 // 12 月份标签（季节图共用）
