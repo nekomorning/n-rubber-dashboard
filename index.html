@@ -585,7 +585,7 @@ function init(){
   });
   allYears=Array.from(ys).sort();
   var n=allYears.length;
-  allYears.forEach(function(y,i){ yearVisible[y]=(i>=n-4); });
+  allYears.forEach(function(y,i){ yearVisible[y]=(i>=n-5); });
   document.getElementById("dataDate").textContent="数据截至 "+(CORE.latestDataDate||"");
   renderTabs();
   buildYearBar();
