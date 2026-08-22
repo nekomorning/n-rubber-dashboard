@@ -632,7 +632,9 @@ async function exportPDF(){
         x=margin+(availW-w)/2; y=margin;
       }
       if(!firstPage) doc.addPage();
-      doc.addImage(canvas.toDataURL('image/png'),'PNG',x,y,w,h);
+      /* 用 JPEG（有损但高压缩）替代 PNG（无损），quality 0.92 下肉眼几乎无损，
+         单页体积可由 ~20MB(PNG) 降至 ~0.5MB，10+ 页 PDF 由 200MB+ 降至个位数 MB */
+      doc.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',x,y,w,h);
     }
     // 封面
     var cover=document.createElement('div');
@@ -644,7 +646,7 @@ async function exportPDF(){
       '<div style="font-size:14px;font-weight:700;color:#1f2733;margin-bottom:8px;">本周核心变化</div>'+
       '<div style="line-height:2;font-size:13px;color:#1f2733;background:#f8fafd;border-radius:6px;padding:10px 12px;">'+noteHtml+'</div>';
     document.body.appendChild(cover);
-    var coverCanvas=await html2canvas(cover,{backgroundColor:'#fff',scale:1.5,useCORS:true});
+    var coverCanvas=await html2canvas(cover,{backgroundColor:'#fff',scale:2,useCORS:true});
     document.body.removeChild(cover);
     placeImage(doc, coverCanvas, true);
 
@@ -662,7 +664,7 @@ async function exportPDF(){
       await new Promise(function(r){ setTimeout(r,60); });
       // 把分析文字 textarea 临时替换为 div，保证多行文字在 PDF 中完整渲染
       var restore=replaceDescForExport(secEls[i]);
-      var canvas=await html2canvas(secEls[i],{backgroundColor:'#fff',scale:1.5,useCORS:true});
+      var canvas=await html2canvas(secEls[i],{backgroundColor:'#fff',scale:2,useCORS:true});
       restore();
       placeImage(doc, canvas, false);
     }
