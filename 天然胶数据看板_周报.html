@@ -74,9 +74,6 @@ a.tab:hover{background:var(--accent); color:#fff;}
   padding:2px 4px; font-size:16px; line-height:1.6; font-weight:400; color:#1f2733; background:transparent; font-family:inherit; margin-bottom:8px;}
 .sec--desc::placeholder{color:#8aa0c0; font-weight:400;}
 .sec--charts{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
-/* 天气板块(p4)横向滚动：卡片横排、可左右滚动，不折行 */
-.sec--charts.hscroll{display:flex; flex-direction:row; flex-wrap:nowrap; overflow-x:auto; gap:10px; padding-bottom:8px; align-items:stretch;}
-.sec--charts.hscroll .citem{flex:0 0 260px; width:260px;}
 .sec--row-label{font-size:12px; color:var(--sub); font-weight:600; margin:6px 0 2px;}
 .sec--images{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:8px;}
 .sec--images.full{grid-template-columns:1fr;}
@@ -444,7 +441,6 @@ function gridForN(n){
 }
 /* 根据图数 n 与当前视口宽度设置 .sec--charts 列数（窄屏收敛列数） */
 function applyGrid(box, n){
-  if(box.classList && box.classList.contains('hscroll')) return;  // 横向滚动板块不套网格列数
   var cols=gridForN(n)[1];
   var w=window.innerWidth;
   if(w<=600) cols=Math.min(cols,1);
@@ -473,7 +469,7 @@ function renderCanvas(){
     div.innerHTML=
       '<div class="sec-hd"><input class="sec--ttl" value="'+esc(sec.title)+'"></div>'+
       '<textarea class="sec--desc" placeholder="简要分析文字（可写多行）">'+esc(sec.analysis)+'</textarea>'+
-      '<div class="sec--charts'+(sec.id==='p4'?' hscroll':'')+'" id="sec_chart_'+idx+'"></div>'+
+      '<div class="sec--charts" id="sec_chart_'+idx+'"></div>'+
       '<div class="sec--images" id="sec_img_'+idx+'" style="display:none"></div>'+
       '<div class="sec--tables" id="sec_table_'+idx+'"></div>';
     wrap.appendChild(div);
@@ -495,7 +491,7 @@ function renderCanvas(){
         var el=card.querySelector('.chart');
         if(oneChart) el.style.height='300px';   // 单图铺满放大
       });
-      if(!chartBox.classList.contains('hscroll')) applyGrid(chartBox, sec.chart_ids.length);  // 横向滚动板块跳过网格列数
+      applyGrid(chartBox, sec.chart_ids.length);
     }
     var imgBox=div.querySelector('.sec--images');
     if(String(sec.id).indexOf('custom_')===0) imgBox.classList.add('full');
