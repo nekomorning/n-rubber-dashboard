@@ -54,6 +54,7 @@ a.tab:hover{background:var(--accent); color:#fff;}
 .lib-item:hover{background:#f4f7fb;}
 .lib-item.added{background:#eef4fb; border-color:#c6d8ec;}
 .lib-item .txt{display:flex; flex-direction:column; min-width:0; flex:1;}
+.lib-item .txt .nm{font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .lib-item .txt .pg{font-size:11px; color:var(--sub); font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .chkwrap{display:flex; align-items:center; flex:0 0 auto; padding:0 8px 0 2px; cursor:pointer;}
 .chkwrap input{width:16px; height:16px; cursor:pointer; accent-color:var(--accent);}
@@ -336,7 +337,7 @@ function renderLib(){
     var chk=checkedIds[sec.id]?'checked':'';
     html+='<div class="lib-item added">'+
       '<label class="chkwrap"><input type="checkbox" class="chk" '+chk+' onchange="toggleCheck(\''+sec.id+'\')"></label>'+
-      '<div class="txt" onclick="focusSec(\''+sec.id+'\')">'+esc(name)+'<span class="pg">'+esc(desc)+'</span></div>'+
+      '<div class="txt" onclick="focusSec(\''+sec.id+'\')"><span class="nm">'+esc(name)+'</span><span class="pg">'+esc(desc)+'</span></div>'+
       '<div class="lib-ctrl">'+
       '<button title="移到最前" '+(canUp?'':'disabled')+' onclick="event.stopPropagation();moveSecFirst(\''+sec.id+'\')">⇈</button>'+
       '<button title="上移" '+(canUp?'':'disabled')+' onclick="event.stopPropagation();moveSecById(\''+sec.id+'\',-1)">▲</button>'+
@@ -350,7 +351,7 @@ function renderLib(){
     var chk=checkedIds[s.id]?'checked':'';
     return '<div class="lib-item">'+
       '<label class="chkwrap"><input type="checkbox" class="chk" '+chk+' onchange="toggleCheck(\''+s.id+'\')"></label>'+
-      '<div class="txt" onclick="toggleSection(\''+s.id+'\')">'+esc(s.name)+'<span class="pg">'+esc(s.desc)+'</span></div>'+
+      '<div class="txt" onclick="toggleSection(\''+s.id+'\')"><span class="nm">'+esc(s.name)+'</span><span class="pg">'+esc(s.desc)+'</span></div>'+
       '<div class="lib-ctrl">'+
       '<button title="上移" disabled>▲</button>'+
       '<button title="下移" disabled>▼</button>'+
