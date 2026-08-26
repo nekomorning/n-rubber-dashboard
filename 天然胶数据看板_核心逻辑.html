@@ -95,15 +95,18 @@ body{background:var(--bg); color:var(--text);
 .chart-item .k{color:var(--sub); font-size:11px;}
 /* 复盘板块 */
 .review-section{margin-top:28px;}
-.review-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch;}
+.review-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; grid-auto-rows:1fr;}
 .review-card{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 14px 14px; min-height:420px; display:flex; flex-direction:column;}
 .review-card .card-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; flex-shrink:0; cursor:default;}
-.review-card .card-head .ttl{font-size:15px; font-weight:700; color:#2a3345;}
+.review-card .card-head .ttl{font-size:15px; font-weight:700; color:#2a3345; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.4;}
+.review-card .card-head .ttl.review-title{background:transparent; border:none; border-bottom:1px solid transparent; padding:2px 4px; outline:none; cursor:text; font-family:inherit;}
+.review-card .card-head .ttl.review-title:hover{border-bottom-color:#dde3ec;}
+.review-card .card-head .ttl.review-title:focus{border-bottom-color:var(--accent); color:var(--accent);}
 .review-card .card-head .actions{display:flex; gap:8px;}
 .review-selectors{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; flex-shrink:0;}
 .review-selectors select{flex:1; min-width:110px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; background:#fff; font-size:12px; color:var(--text); outline:none;}
 .review-selectors select:focus{border-color:var(--accent);}
-.review-chart{flex:1; min-height:280px; border:1px solid var(--border); border-radius:8px; background:#fff; margin-top:4px;}
+.review-chart{flex:1; min-height:0; border:1px solid var(--border); border-radius:8px; background:#fff; margin-top:4px;}
 .review-text{flex:1; display:flex; flex-direction:column; min-height:0;}
 .review-text .logic{flex:1; margin:0; min-height:0; overflow:auto;}
 @media (max-width:1100px){ .review-grid{grid-template-columns:1fr;} }
@@ -143,24 +146,52 @@ body{background:var(--bg); color:var(--text);
     <h2 class="sec-title">复盘</h2>
     <div class="review-grid">
       <div class="review-card">
-        <div class="card-head"><span class="ttl">跨页数据对比</span>
+        <div class="card-head"><input class="ttl review-title" value="跨页数据对比 ①" data-idx="0" spellcheck="false">
           <div class="actions">
-            <button class="abtn" id="reviewSave">保存</button>
-            <button class="abtn" id="reviewClearSel">清空</button>
+            <button class="abtn review-save" data-idx="0">保存</button>
+            <button class="abtn review-clear" data-idx="0">清空</button>
           </div>
         </div>
         <div class="review-selectors">
-          <select id="reviewSel0" class="review-sel"></select>
-          <select id="reviewSel1" class="review-sel"></select>
-          <select id="reviewSel2" class="review-sel"></select>
+          <select id="reviewSel0_0" class="review-sel"></select>
+          <select id="reviewSel0_1" class="review-sel"></select>
+          <select id="reviewSel0_2" class="review-sel"></select>
         </div>
-        <div id="reviewChart" class="review-chart"></div>
+        <div id="reviewChart0" class="review-chart"></div>
       </div>
       <div class="review-card">
         <div class="card-head"><span class="ttl">复盘笔记</span>
           <button class="abtn" id="reviewNoteEdit">✎ 编辑</button>
         </div>
         <div class="review-text"><div class="logic" id="reviewNoteBox"><ul id="reviewNoteList"></ul></div></div>
+      </div>
+      <div class="review-card">
+        <div class="card-head"><input class="ttl review-title" value="跨页数据对比 ②" data-idx="1" spellcheck="false">
+          <div class="actions">
+            <button class="abtn review-save" data-idx="1">保存</button>
+            <button class="abtn review-clear" data-idx="1">清空</button>
+          </div>
+        </div>
+        <div class="review-selectors">
+          <select id="reviewSel1_0" class="review-sel"></select>
+          <select id="reviewSel1_1" class="review-sel"></select>
+          <select id="reviewSel1_2" class="review-sel"></select>
+        </div>
+        <div id="reviewChart1" class="review-chart"></div>
+      </div>
+      <div class="review-card">
+        <div class="card-head"><input class="ttl review-title" value="跨页数据对比 ③" data-idx="2" spellcheck="false">
+          <div class="actions">
+            <button class="abtn review-save" data-idx="2">保存</button>
+            <button class="abtn review-clear" data-idx="2">清空</button>
+          </div>
+        </div>
+        <div class="review-selectors">
+          <select id="reviewSel2_0" class="review-sel"></select>
+          <select id="reviewSel2_1" class="review-sel"></select>
+          <select id="reviewSel2_2" class="review-sel"></select>
+        </div>
+        <div id="reviewChart2" class="review-chart"></div>
       </div>
     </div>
   </section>
@@ -255,7 +286,9 @@ var logicHistory=[];   // [{date, text:[]}] 定价逻辑编辑历史（最新在
 /* 复盘板块状态 */
 var REVIEW_CATALOG=[], reviewCatalogMap={};
 var REVIEW_PALETTE=["#1E6FFF","#E0301E","#0a9a5c","#8B5CF6","#F59A23","#0f4c81"];
-var reviewSel=["","",""], reviewNoteText=null, reviewChart=null;
+var reviewSels=[["","",""],["","",""],["","",""]], reviewNoteText=null, reviewCharts=[null,null,null];
+var DEFAULT_REVIEW_TITLES=["跨页数据对比 ①","跨页数据对比 ②","跨页数据对比 ③"];
+var reviewTitles=DEFAULT_REVIEW_TITLES.slice();
 var DEFAULT_REVIEW_NOTE=[
   "复盘：**记录关键判断与事后验证**，用 **红** / @@蓝@@ / %%绿%% 区分结论、驱动、风险",
   "供应：",
@@ -332,7 +365,7 @@ function migrateRowNote(oldId, newId){
 }
 function contentPayload(){
   return {logic: logicText||DEFAULT_LOGIC, rowNotes: rowNotes, history: logicHistory,
-          reviewSel: reviewSel, reviewNoteText: reviewNoteText||DEFAULT_REVIEW_NOTE,
+          reviewSels: reviewSels, reviewTitles: reviewTitles, reviewNoteText: reviewNoteText||DEFAULT_REVIEW_NOTE,
           savedAt: new Date().toLocaleString('zh-CN')};
 }
 function saveContentAuto(){ try{ localStorage.setItem(CONTENT_KEY, JSON.stringify(contentPayload())); }catch(e){} }
@@ -344,11 +377,16 @@ function loadContent(){
     if(Array.isArray(data.logic)&&data.logic.length) logicText=data.logic;
     if(Array.isArray(data.rowNotes)) rowNotes=data.rowNotes;
     if(Array.isArray(data.history)) logicHistory=data.history;
-    if(Array.isArray(data.reviewSel)){
-      var ra=["","",""];
-      data.reviewSel.slice(0,3).forEach(function(id,i){ if(id) ra[i]=id; });
-      reviewSel=ra;
+    if(Array.isArray(data.reviewSels)){
+      reviewSels=[["","",""],["","",""],["","",""]];
+      data.reviewSels.slice(0,3).forEach(function(arr,wi){
+        if(Array.isArray(arr)) arr.slice(0,3).forEach(function(id,i){ if(id) reviewSels[wi][i]=id; });
+      });
+    } else if(Array.isArray(data.reviewSel)){
+      reviewSels=[["","",""],["","",""],["","",""]];
+      data.reviewSel.slice(0,3).forEach(function(id,i){ if(id) reviewSels[0][i]=id; });
     }
+    if(Array.isArray(data.reviewTitles)&&data.reviewTitles.length>=3){ reviewTitles=data.reviewTitles.slice(0,3); } else { reviewTitles=DEFAULT_REVIEW_TITLES.slice(); }
     if(Array.isArray(data.reviewNoteText)&&data.reviewNoteText.length) reviewNoteText=data.reviewNoteText;
   }
   renderLogic();
@@ -820,14 +858,14 @@ function buildReviewCatalog(){
     });
   });
 }
-function drawReviewChart(div, entries){
-  if(reviewChart){ try{ reviewChart.dispose(); }catch(e){} reviewChart=null; }
+function drawReviewChart(div, entries, idx){
+  if(reviewCharts[idx]){ try{ reviewCharts[idx].dispose(); }catch(e){} reviewCharts[idx]=null; }
   if(!div) return;
   if(!entries||!entries.length){ div.innerHTML='<div style="padding:30px;color:#6b7686;text-align:center">请在上方的下拉框中选择 1–3 个对比指标（可跨页）</div>'; return; }
   if(!window.echarts){ div.innerHTML="<div style='padding:20px;color:#c00'>ECharts 未加载</div>"; return; }
   var fixedColors=["#1E6FFF","#E0301E","#2a3345"];
   div.style.height='100%';
-  var c=echarts.init(div); reviewChart=c;
+  var c=echarts.init(div); reviewCharts[idx]=c;
   var series=[], legend=[], yAxisDefs=[], nameMap={};
   var allDates=[];
   entries.forEach(function(en, i){
@@ -876,28 +914,30 @@ function drawReviewChart(div, entries){
   setTimeout(function(){ try{ c.resize(); }catch(e){} }, 0);
 }
 function populateReviewSelects(){
-  var sels=[document.getElementById("reviewSel0"),document.getElementById("reviewSel1"),document.getElementById("reviewSel2")];
-  var byPage={};
-  REVIEW_CATALOG.forEach(function(en){ (byPage[en.page]=byPage[en.page]||[]).push(en); });
-  sels.forEach(function(sel, i){
-    if(!sel) return;
-    var cur=reviewSel[i]||"";
-    sel.innerHTML='<option value="">— 对比项 '+(i+1)+' —</option>';
-    Object.keys(byPage).forEach(function(p){
-      var og=document.createElement("optgroup"); og.label=p;
-      byPage[p].forEach(function(en){
-        var o=document.createElement("option"); o.value=en.id; o.textContent=en.name;
-        if(en.id===cur) o.selected=true;
-        og.appendChild(o);
+  [0,1,2].forEach(function(idx){
+    var sels=[document.getElementById("reviewSel"+idx+"_0"),document.getElementById("reviewSel"+idx+"_1"),document.getElementById("reviewSel"+idx+"_2")];
+    var byPage={};
+    REVIEW_CATALOG.forEach(function(en){ (byPage[en.page]=byPage[en.page]||[]).push(en); });
+    sels.forEach(function(sel, i){
+      if(!sel) return;
+      var cur=(reviewSels[idx]||[])[i]||"";
+      sel.innerHTML='<option value="">— 对比项 '+(i+1)+' —</option>';
+      Object.keys(byPage).forEach(function(p){
+        var og=document.createElement("optgroup"); og.label=p;
+        byPage[p].forEach(function(en){
+          var o=document.createElement("option"); o.value=en.id; o.textContent=en.name;
+          if(en.id===cur) o.selected=true;
+          og.appendChild(o);
+        });
+        sel.appendChild(og);
       });
-      sel.appendChild(og);
+      sel.onchange=function(){ reviewSels[idx][i]=sel.value||""; saveReviewAuto(); drawReviewChartFromSel(idx); };
     });
-    sel.onchange=function(){ reviewSel[i]=sel.value||""; saveReviewAuto(); drawReviewChartFromSel(); };
   });
 }
-function drawReviewChartFromSel(){
-  var entries=reviewSel.filter(Boolean).map(function(id){ return reviewCatalogMap[id]; }).filter(Boolean);
-  drawReviewChart(document.getElementById("reviewChart"), entries);
+function drawReviewChartFromSel(idx){
+  var entries=(reviewSels[idx]||[]).filter(Boolean).map(function(id){ return reviewCatalogMap[id]; }).filter(Boolean);
+  drawReviewChart(document.getElementById("reviewChart"+idx), entries, idx);
 }
 function renderReviewNoteBox(){
   var ul=document.getElementById("reviewNoteList"); if(!ul) return;
@@ -948,8 +988,8 @@ function init(){
   renderAll();
   /* 复盘板块 */
   buildReviewCatalog();
-  populateReviewSelects();
-  drawReviewChartFromSel();
+  [0,1,2].forEach(function(i){ populateReviewSelects(i); drawReviewChartFromSel(i); });
+  reviewTitles.forEach(function(t,i){ var el=document.querySelector('.review-title[data-idx="'+i+'"]'); if(el) el.value=t||DEFAULT_REVIEW_TITLES[i]; });
   renderReviewNoteBox();
 }
 
@@ -989,24 +1029,49 @@ document.getElementById("modalClose").onclick=closePicker;
 document.getElementById("modal").addEventListener("click", function(e){ if(e.target===this) closePicker(); });
 document.getElementById("modalSearch").addEventListener("input", function(e){ renderPickerList(e.target.value); });
 /* 复盘事件 */
-document.getElementById("reviewSave").onclick=function(){
-  var b=this, orig=b.innerHTML;
-  try{
-    localStorage.setItem(CONTENT_SAVED_KEY, JSON.stringify(contentPayload()));
-    saveContentAuto();
-    var t=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-    b.innerHTML="✓ 已保存 "+t;
-    b.classList.add("saved");
-    setTimeout(function(){ b.innerHTML=orig; b.classList.remove("saved"); }, 2500);
-  }catch(e){ alert("保存失败："+e.message); }
-};
-document.getElementById("reviewClearSel").onclick=function(){ reviewSel=["","",""]; saveReviewAuto(); populateReviewSelects(); drawReviewChartFromSel(); };
+function readReviewTitles(){
+  [0,1,2].forEach(function(i){
+    var el=document.querySelector('.review-title[data-idx="'+i+'"]');
+    reviewTitles[i]=(el && el.value.trim()) ? el.value.trim() : DEFAULT_REVIEW_TITLES[i];
+  });
+}
+document.querySelectorAll(".review-save").forEach(function(b){
+  b.onclick=function(){
+    var orig=b.innerHTML;
+    readReviewTitles();
+    try{
+      localStorage.setItem(CONTENT_SAVED_KEY, JSON.stringify(contentPayload()));
+      saveReviewAuto();
+      var t=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+      b.innerHTML="✓ 已保存 "+t;
+      b.classList.add("saved");
+      setTimeout(function(){ b.innerHTML=orig; b.classList.remove("saved"); }, 2500);
+    }catch(e){ alert("保存失败："+e.message); }
+  };
+});
+document.querySelectorAll(".review-clear").forEach(function(b){
+  b.onclick=function(){
+    var idx=parseInt(b.getAttribute("data-idx")||"0",10);
+    reviewSels[idx]=["","",""];
+    saveReviewAuto();
+    populateReviewSelects();
+    [0,1,2].forEach(function(i){ drawReviewChartFromSel(i); });
+  };
+});
+document.querySelectorAll(".review-title").forEach(function(el){
+  el.addEventListener("change", function(){
+    var idx=parseInt(el.getAttribute("data-idx")||"0",10);
+    reviewTitles[idx]=(el.value.trim())?el.value.trim():DEFAULT_REVIEW_TITLES[idx];
+    saveReviewAuto();
+  });
+  el.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); el.blur(); } });
+});
 document.getElementById("reviewNoteEdit").onclick=openReviewNoteEdit;
 document.getElementById("reviewNoteClose").onclick=closeReviewNoteEdit;
 document.getElementById("reviewNoteCancel").onclick=closeReviewNoteEdit;
 document.getElementById("reviewNoteSave").onclick=saveReviewNoteEdit;
 document.getElementById("modalReviewNote").addEventListener("click", function(e){ if(e.target===this) closeReviewNoteEdit(); });
-window.addEventListener("resize", function(){ charts.forEach(function(c){ try{ c.resize(); }catch(e){} }); relayoutCols(); if(reviewChart){ try{ reviewChart.resize(); }catch(e){} } });
+window.addEventListener("resize", function(){ charts.forEach(function(c){ try{ c.resize(); }catch(e){} }); relayoutCols(); reviewCharts.forEach(function(c){ if(c){ try{ c.resize(); }catch(e){} } }); });
 document.addEventListener("click", function(e){
   if(e.target.closest(".menu-btn")) return;
   document.querySelectorAll(".card .menu.show").forEach(function(m){ m.classList.remove("show"); });
