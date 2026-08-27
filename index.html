@@ -28,6 +28,8 @@ body{background:var(--bg); color:var(--text);
 .logic ul{list-style:none; padding:0; margin:0;}
 .logic li{position:relative; padding-left:18px; margin:8px 0; color:var(--text); font-size:16px; line-height:1.6;}
 .logic li::before{content:"●"; position:absolute; left:2px; color:var(--accent); font-size:9px; top:6px;}
+.logic li ul{list-style:none; padding:0; margin:4px 0 0 14px;}
+.logic li li::before{content:"○"; color:var(--sub); font-size:8px; top:7px;}
 .logic b{color:var(--accent);}
 /* 年份筛选 */
 .ybar{display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 14px;}
@@ -228,7 +230,7 @@ body{background:var(--bg); color:var(--text);
   <div class="modal" id="modalReviewNote" style="display:none">
     <div class="modal-box">
       <div class="modal-head"><span>编辑复盘笔记</span><button id="reviewNoteClose">✕</button></div>
-      <div class="modal-search" style="font-size:12px;color:var(--sub)">每行一条。支持 **红** / @@蓝@@ / %%绿%% 加粗与行首「供应：/需求：/核心：」自动蓝色加粗。</div>
+      <div class="modal-search" style="font-size:12px;color:var(--sub)">每行一条。支持 **红** / @@蓝@@ / %%绿%% 加粗与行首「供应：/需求：/核心：」自动蓝色加粗。按 Tab 缩进、Shift+Tab 取消缩进，以突出段落层级。</div>
       <div class="modal-list" style="padding:10px 16px 16px;">
         <textarea id="reviewNoteInput" style="width:100%; height:200px; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:14px; line-height:1.7; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
@@ -939,16 +941,36 @@ function drawReviewChartFromSel(idx){
   var entries=(reviewSels[idx]||[]).filter(Boolean).map(function(id){ return reviewCatalogMap[id]; }).filter(Boolean);
   drawReviewChart(document.getElementById("reviewChart"+idx), entries, idx);
 }
-function renderReviewNoteBox(){
-  var ul=document.getElementById("reviewNoteList"); if(!ul) return;
-  ul.innerHTML="";
-  var lines=reviewNoteText||DEFAULT_REVIEW_NOTE;
-  lines.forEach(function(line){
+function parseIndent(line){
+  var i=0, n=line.length;
+  while(i<n && (line[i]===' ' || line[i]==='\t')) i++;
+  return {level:i, text:line.substring(i)};
+}
+function buildNestedReviewList(lines){
+  var ul=document.createElement("ul");
+  var i=0;
+  while(i<lines.length){
+    var info=parseIndent(lines[i]);
     var li=document.createElement("li");
-    li.style.paddingLeft="18px";
-    li.innerHTML=logicLineToHtml(line);
+    li.innerHTML=logicLineToHtml(info.text);
+    i++;
+    var children=[];
+    while(i<lines.length){
+      var c=parseIndent(lines[i]);
+      if(c.level<=info.level) break;
+      children.push(lines[i]);
+      i++;
+    }
+    if(children.length) li.appendChild(buildNestedReviewList(children));
     ul.appendChild(li);
-  });
+  }
+  return ul;
+}
+function renderReviewNoteBox(){
+  var box=document.getElementById("reviewNoteBox"); if(!box) return;
+  box.innerHTML="";
+  var lines=(reviewNoteText||DEFAULT_REVIEW_NOTE).slice();
+  box.appendChild(buildNestedReviewList(lines));
 }
 function openReviewNoteEdit(){
   var ta=document.getElementById("reviewNoteInput");
@@ -965,6 +987,28 @@ function saveReviewNoteEdit(){
   saveContentAuto();
   renderReviewNoteBox();
   closeReviewNoteEdit();
+}
+function reviewNoteInputKey(e){
+  if(e.key!=="Tab") return;
+  e.preventDefault();
+  var ta=e.target, v=ta.value, s=ta.selectionStart, en=ta.selectionEnd, shift=e.shiftKey;
+  var blockStart=v.lastIndexOf("\n",s-1)+1;
+  var blockEnd=v.indexOf("\n",en); if(blockEnd===-1) blockEnd=v.length;
+  var block=v.slice(blockStart,blockEnd);
+  var lines=block.split("\n");
+  var out=lines.map(function(l){
+    if(shift) return l.replace(/^(\t|  )/,"");
+    return "  "+l;
+  }).join("\n");
+  ta.value=v.slice(0,blockStart)+out+v.slice(blockEnd);
+  if(s===en){
+    var pos=s+(shift?-2:2);
+    if(pos<blockStart) pos=blockStart;
+    ta.selectionStart=ta.selectionEnd=pos;
+  } else {
+    ta.selectionStart=blockStart;
+    ta.selectionEnd=blockStart+out.length;
+  }
 }
 function saveReviewAuto(){ try{ localStorage.setItem(CONTENT_KEY, JSON.stringify(contentPayload())); }catch(e){} }
 
@@ -1070,6 +1114,7 @@ document.getElementById("reviewNoteEdit").onclick=openReviewNoteEdit;
 document.getElementById("reviewNoteClose").onclick=closeReviewNoteEdit;
 document.getElementById("reviewNoteCancel").onclick=closeReviewNoteEdit;
 document.getElementById("reviewNoteSave").onclick=saveReviewNoteEdit;
+document.getElementById("reviewNoteInput").addEventListener("keydown", reviewNoteInputKey);
 document.getElementById("modalReviewNote").addEventListener("click", function(e){ if(e.target===this) closeReviewNoteEdit(); });
 window.addEventListener("resize", function(){ charts.forEach(function(c){ try{ c.resize(); }catch(e){} }); relayoutCols(); reviewCharts.forEach(function(c){ if(c){ try{ c.resize(); }catch(e){} } }); });
 document.addEventListener("click", function(e){
