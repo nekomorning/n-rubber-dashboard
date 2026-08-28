@@ -30,6 +30,7 @@ body{background:var(--bg); color:var(--text);
 .logic li::before{content:"●"; position:absolute; left:2px; color:var(--accent); font-size:9px; top:6px;}
 .logic li ul{list-style:none; padding:0; margin:4px 0 0 14px;}
 .logic li li::before{content:"○"; color:var(--sub); font-size:8px; top:7px;}
+.logic-img{max-width:100%; border:1px solid var(--border); border-radius:6px; background:#fff; display:block; margin:8px 0;}
 .logic b{color:var(--accent);}
 /* 年份筛选 */
 .ybar{display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 14px;}
@@ -212,9 +213,13 @@ body{background:var(--bg); color:var(--text);
       <div class="modal-search" style="font-size:12px;color:var(--sub)">每行一条。三种加粗标记：<code>**红**</code> 红色加粗 · <code>@@蓝@@</code> 蓝色加粗 · <code>%%绿%%</code> 绿色加粗。行首「供应：/需求：/核心：」自动蓝色加粗。</div>
       <div class="modal-list" style="padding:10px 16px 16px;">
         <textarea id="logicInput" style="width:100%; height:150px; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:14px; line-height:1.7; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
-        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
-          <button class="abtn" id="logicSave">保存</button>
-          <button class="abtn" id="logicCancel">取消</button>
+        <input type="file" id="logicImgFile" accept="image/*" style="display:none">
+        <div style="display:flex; gap:10px; justify-content:space-between; margin-top:10px;">
+          <button class="abtn" id="logicImgBtn">插入图片</button>
+          <div style="display:flex; gap:10px;">
+            <button class="abtn" id="logicSave">保存</button>
+            <button class="abtn" id="logicCancel">取消</button>
+          </div>
         </div>
       </div>
     </div>
@@ -233,9 +238,13 @@ body{background:var(--bg); color:var(--text);
       <div class="modal-search" style="font-size:12px;color:var(--sub)">每行一条。支持 **红** / @@蓝@@ / %%绿%% 加粗与行首「供应：/需求：/核心：」自动蓝色加粗。按 Tab 缩进、Shift+Tab 取消缩进，以突出段落层级。</div>
       <div class="modal-list" style="padding:10px 16px 16px;">
         <textarea id="reviewNoteInput" style="width:100%; height:200px; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:14px; line-height:1.7; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
-        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
-          <button class="abtn" id="reviewNoteSave">保存</button>
-          <button class="abtn" id="reviewNoteCancel">取消</button>
+        <input type="file" id="reviewNoteImgFile" accept="image/*" style="display:none">
+        <div style="display:flex; gap:10px; justify-content:space-between; margin-top:10px;">
+          <button class="abtn" id="reviewNoteImgBtn">插入图片</button>
+          <div style="display:flex; gap:10px;">
+            <button class="abtn" id="reviewNoteSave">保存</button>
+            <button class="abtn" id="reviewNoteCancel">取消</button>
+          </div>
         </div>
       </div>
     </div>
@@ -291,6 +300,7 @@ var REVIEW_PALETTE=["#1E6FFF","#E0301E","#0a9a5c","#8B5CF6","#F59A23","#0f4c81"]
 var reviewSels=[["","",""],["","",""],["","",""]], reviewNoteText=null, reviewCharts=[null,null,null];
 var DEFAULT_REVIEW_TITLES=["跨页数据对比 ①","跨页数据对比 ②","跨页数据对比 ③"];
 var reviewTitles=DEFAULT_REVIEW_TITLES.slice();
+var logicImages={}, reviewImages={};
 var DEFAULT_REVIEW_NOTE=[
   "复盘：**记录关键判断与事后验证**，用 **红** / @@蓝@@ / %%绿%% 区分结论、驱动、风险",
   "供应：",
@@ -333,7 +343,15 @@ function loadLayout(){
 
 /* ---- 定价逻辑 / 行标题 / 保存内容 ---- */
 function esc(s){ var d=document.createElement("div"); d.textContent=(s==null?"":String(s)); return d.innerHTML; }
-function logicLineToHtml(line){
+function escAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function logicLineToHtml(line, imageMap){
+  imageMap=imageMap||logicImages;
+  if(/^img::(.+)$/.test(line)){
+    var id=RegExp.$1.trim();
+    var src=imageMap[id];
+    if(src) return '<img class="logic-img" src="'+escAttr(src)+'" alt="'+escAttr(id)+'">';
+    return '<span style="color:var(--sub)">[图片缺失：'+esc(id)+']</span>';
+  }
   var s=esc(line);
   s=s.replace(/^([供应需求核心价格供需]+\s*[:：])/, '<b>$1</b>');
   s=s.replace(/\*\*([^*]+)\*\*/g, '<span style="color:#e0301e;font-weight:700">$1</span>');
@@ -366,8 +384,8 @@ function migrateRowNote(oldId, newId){
   if(rn) rn.cardId=newId;
 }
 function contentPayload(){
-  return {logic: logicText||DEFAULT_LOGIC, rowNotes: rowNotes, history: logicHistory,
-          reviewSels: reviewSels, reviewTitles: reviewTitles, reviewNoteText: reviewNoteText||DEFAULT_REVIEW_NOTE,
+  return {logic: logicText||DEFAULT_LOGIC, rowNotes: rowNotes, history: logicHistory, images: logicImages,
+          reviewSels: reviewSels, reviewTitles: reviewTitles, reviewNoteText: reviewNoteText||DEFAULT_REVIEW_NOTE, reviewImages: reviewImages,
           savedAt: new Date().toLocaleString('zh-CN')};
 }
 function saveContentAuto(){ try{ localStorage.setItem(CONTENT_KEY, JSON.stringify(contentPayload())); }catch(e){} }
@@ -390,6 +408,8 @@ function loadContent(){
     }
     if(Array.isArray(data.reviewTitles)&&data.reviewTitles.length>=3){ reviewTitles=data.reviewTitles.slice(0,3); } else { reviewTitles=DEFAULT_REVIEW_TITLES.slice(); }
     if(Array.isArray(data.reviewNoteText)&&data.reviewNoteText.length) reviewNoteText=data.reviewNoteText;
+    if(data.images && typeof data.images==="object") logicImages=data.images; else logicImages={};
+    if(data.reviewImages && typeof data.reviewImages==="object") reviewImages=data.reviewImages; else reviewImages={};
   }
   renderLogic();
 }
@@ -946,13 +966,14 @@ function parseIndent(line){
   while(i<n && (line[i]===' ' || line[i]==='\t')) i++;
   return {level:i, text:line.substring(i)};
 }
-function buildNestedReviewList(lines){
+function buildNestedReviewList(lines, imageMap){
+  imageMap=imageMap||reviewImages;
   var ul=document.createElement("ul");
   var i=0;
   while(i<lines.length){
     var info=parseIndent(lines[i]);
     var li=document.createElement("li");
-    li.innerHTML=logicLineToHtml(info.text);
+    li.innerHTML=logicLineToHtml(info.text, imageMap);
     i++;
     var children=[];
     while(i<lines.length){
@@ -961,7 +982,7 @@ function buildNestedReviewList(lines){
       children.push(lines[i]);
       i++;
     }
-    if(children.length) li.appendChild(buildNestedReviewList(children));
+    if(children.length) li.appendChild(buildNestedReviewList(children, imageMap));
     ul.appendChild(li);
   }
   return ul;
@@ -1011,6 +1032,90 @@ function reviewNoteInputKey(e){
   }
 }
 function saveReviewAuto(){ try{ localStorage.setItem(CONTENT_KEY, JSON.stringify(contentPayload())); }catch(e){} }
+
+/* ---- 图片嵌入：压缩后存 localStorage，文本行以 img::<id> 引用 ---- */
+function embedImageFile(file){
+  return new Promise(function(resolve){
+    if(!file || !/^image\//.test(file.type)){ resolve(null); return; }
+    var reader=new FileReader();
+    reader.onload=function(){
+      var img=new Image();
+      img.onload=function(){
+        try{
+          var maxW=1000, w=img.width, h=img.height;
+          if(w>maxW){ h=Math.round(h*maxW/w); w=maxW; }
+          var cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+          cv.getContext("2d").drawImage(img,0,0,w,h);
+          resolve(cv.toDataURL("image/jpeg",0.85));
+        }catch(e){ resolve(reader.result); }
+      };
+      img.onerror=function(){ resolve(reader.result); };
+      img.src=reader.result;
+    };
+    reader.onerror=function(){ resolve(null); };
+    reader.readAsDataURL(file);
+  });
+}
+function insertImageToken(dataUrl){
+  if(!dataUrl) return;
+  var id="img_"+(Date.now().toString(36))+"_"+Math.random().toString(36).slice(2,7);
+  logicImages[id]=dataUrl;
+  var ta=document.getElementById("logicInput"); if(!ta) return;
+  var start=ta.selectionStart||0, end=ta.selectionEnd||0, val=ta.value;
+  var before=val.slice(0,start)+(start>0 && val.charAt(start-1)!=="\n"?"\n":"");
+  var token="img::"+id;
+  var after=val.slice(end);
+  var tail=(after.length>0 && after.charAt(0)!=="\n")?"\n":"";
+  ta.value=before+token+tail+after;
+  var pos=before.length+token.length+(tail?1:0);
+  ta.selectionStart=ta.selectionEnd=pos; ta.focus();
+}
+function insertReviewImageToken(dataUrl){
+  if(!dataUrl) return;
+  var id="rimg_"+(Date.now().toString(36))+"_"+Math.random().toString(36).slice(2,7);
+  reviewImages[id]=dataUrl;
+  var ta=document.getElementById("reviewNoteInput"); if(!ta) return;
+  var start=ta.selectionStart||0, end=ta.selectionEnd||0, val=ta.value;
+  var before=val.slice(0,start)+(start>0 && val.charAt(start-1)!=="\n"?"\n":"");
+  var token="img::"+id;
+  var after=val.slice(end);
+  var tail=(after.length>0 && after.charAt(0)!=="\n")?"\n":"";
+  ta.value=before+token+tail+after;
+  var pos=before.length+token.length+(tail?1:0);
+  ta.selectionStart=ta.selectionEnd=pos; ta.focus();
+}
+function setupLogicImagePaste(){
+  var ta=document.getElementById("logicInput"); if(!ta) return;
+  ta.addEventListener("paste", function(e){
+    var cd=e.clipboardData||window.clipboardData; if(!cd||!cd.items) return;
+    var imgItem=null;
+    for(var i=0;i<cd.items.length;i++){ if(cd.items[i].type && cd.items[i].type.indexOf("image/")===0){ imgItem=cd.items[i]; break; } }
+    if(!imgItem) return;
+    e.preventDefault();
+    embedImageFile(imgItem.getAsFile()).then(function(d){ if(d) insertImageToken(d); });
+  });
+  ta.addEventListener("dragover", function(e){ e.preventDefault(); });
+  ta.addEventListener("drop", function(e){
+    var dt=e.dataTransfer; if(!dt||!dt.files||!dt.files.length) return;
+    if(/^image\//.test(dt.files[0].type)){ e.preventDefault(); embedImageFile(dt.files[0]).then(function(d){ if(d) insertImageToken(d); }); }
+  });
+}
+function setupReviewNoteImagePaste(){
+  var ta=document.getElementById("reviewNoteInput"); if(!ta) return;
+  ta.addEventListener("paste", function(e){
+    var cd=e.clipboardData||window.clipboardData; if(!cd||!cd.items) return;
+    var imgItem=null;
+    for(var i=0;i<cd.items.length;i++){ if(cd.items[i].type && cd.items[i].type.indexOf("image/")===0){ imgItem=cd.items[i]; break; } }
+    if(!imgItem) return;
+    e.preventDefault();
+    embedImageFile(imgItem.getAsFile()).then(function(d){ if(d) insertReviewImageToken(d); });
+  });
+  ta.addEventListener("dragover", function(e){ e.preventDefault(); });
+  ta.addEventListener("drop", function(e){
+    var dt=e.dataTransfer; if(!dt||!dt.files||!dt.files.length) return;
+    if(/^image\//.test(dt.files[0].type)){ e.preventDefault(); embedImageFile(dt.files[0]).then(function(d){ if(d) insertReviewImageToken(d); }); }
+  });
+}
 
 function init(){
   var ys=new Set();
@@ -1116,6 +1221,16 @@ document.getElementById("reviewNoteCancel").onclick=closeReviewNoteEdit;
 document.getElementById("reviewNoteSave").onclick=saveReviewNoteEdit;
 document.getElementById("reviewNoteInput").addEventListener("keydown", reviewNoteInputKey);
 document.getElementById("modalReviewNote").addEventListener("click", function(e){ if(e.target===this) closeReviewNoteEdit(); });
+document.getElementById("logicImgBtn").onclick=function(){ document.getElementById("logicImgFile").click(); };
+document.getElementById("logicImgFile").addEventListener("change", function(e){
+  var f=e.target.files && e.target.files[0]; if(f){ embedImageFile(f).then(function(d){ if(d) insertImageToken(d); }); } e.target.value="";
+});
+document.getElementById("reviewNoteImgBtn").onclick=function(){ document.getElementById("reviewNoteImgFile").click(); };
+document.getElementById("reviewNoteImgFile").addEventListener("change", function(e){
+  var f=e.target.files && e.target.files[0]; if(f){ embedImageFile(f).then(function(d){ if(d) insertReviewImageToken(d); }); } e.target.value="";
+});
+setupLogicImagePaste();
+setupReviewNoteImagePaste();
 window.addEventListener("resize", function(){ charts.forEach(function(c){ try{ c.resize(); }catch(e){} }); relayoutCols(); reviewCharts.forEach(function(c){ if(c){ try{ c.resize(); }catch(e){} } }); });
 document.addEventListener("click", function(e){
   if(e.target.closest(".menu-btn")) return;
