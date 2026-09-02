@@ -140,6 +140,9 @@ body{background:var(--bg); color:var(--text);
     <button class="abtn" id="addCard">＋ 新增一行</button>
     <button class="abtn" id="saveLayout">💾 保存布局</button>
     <button class="abtn" id="saveContent">💾 保存内容</button>
+    <button class="abtn" id="exportContent">⇪ 导出内容</button>
+    <button class="abtn" id="importContent">⇩ 导入内容</button>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none">
   </div>
   <div class="ybar" id="ybar"></div>
   <div id="charts"></div>
@@ -283,7 +286,11 @@ function uid(){ return "c"+Date.now().toString(36)+Math.floor(Math.random()*1e4)
 
 /* 多数据源（来自天然胶各看板页） */
 var SOURCES = CORE.sources;
-var DEFAULT_LOGIC = CORE.logicDefault;
+/* 线上内容默认值（由 build_nr_core.py 从 nr_core_content_default.json 注入）；
+   存在时作为页面初始内容，使所有访问者看到一致结果。 */
+var CONTENT_DEFAULT = CORE.contentDefault || null;
+var DEFAULT_LOGIC = (CONTENT_DEFAULT && Array.isArray(CONTENT_DEFAULT.logic) && CONTENT_DEFAULT.logic.length)
+  ? CONTENT_DEFAULT.logic : CORE.logicDefault;
 var allYears=[], yearVisible={}, charts=[], layout=[], dragFrom=null, currentPickIdx=null;
 var LS_KEY="nrCoreLayoutV1";
 var LS_SAVED_KEY="nrCoreLayoutV1_saved";
@@ -298,15 +305,30 @@ var logicHistory=[];   // [{date, text:[]}] 定价逻辑编辑历史（最新在
 var REVIEW_CATALOG=[], reviewCatalogMap={};
 var REVIEW_PALETTE=["#1E6FFF","#E0301E","#0a9a5c","#8B5CF6","#F59A23","#0f4c81"];
 var reviewSels=[["","",""],["","",""],["","",""]], reviewNoteText=null, reviewCharts=[null,null,null];
-var DEFAULT_REVIEW_TITLES=["跨页数据对比 ①","跨页数据对比 ②","跨页数据对比 ③"];
+var DEFAULT_REVIEW_TITLES=(CONTENT_DEFAULT && Array.isArray(CONTENT_DEFAULT.reviewTitles) && CONTENT_DEFAULT.reviewTitles.length>=3)
+  ? CONTENT_DEFAULT.reviewTitles.slice(0,3) : ["跨页数据对比 ①","跨页数据对比 ②","跨页数据对比 ③"];
 var reviewTitles=DEFAULT_REVIEW_TITLES.slice();
-var logicImages={}, reviewImages={};
-var DEFAULT_REVIEW_NOTE=[
+var logicImages=(CONTENT_DEFAULT && CONTENT_DEFAULT.images && typeof CONTENT_DEFAULT.images==="object")?CONTENT_DEFAULT.images:{};
+var reviewImages=(CONTENT_DEFAULT && CONTENT_DEFAULT.reviewImages && typeof CONTENT_DEFAULT.reviewImages==="object")?CONTENT_DEFAULT.reviewImages:{};
+var DEFAULT_REVIEW_NOTE=(CONTENT_DEFAULT && Array.isArray(CONTENT_DEFAULT.reviewNoteText) && CONTENT_DEFAULT.reviewNoteText.length)
+  ? CONTENT_DEFAULT.reviewNoteText : [
   "复盘：**记录关键判断与事后验证**，用 **红** / @@蓝@@ / %%绿%% 区分结论、驱动、风险",
   "供应：",
   "需求：",
   "核心："
 ];
+/* 行标题默认锚点（rowNotes）与复盘下拉默认选择 */
+var DEFAULT_ROW_NOTES=(CONTENT_DEFAULT && Array.isArray(CONTENT_DEFAULT.rowNotes))?CONTENT_DEFAULT.rowNotes:[];
+var DEFAULT_REVIEW_SELS=null;
+if(CONTENT_DEFAULT && Array.isArray(CONTENT_DEFAULT.reviewSels)){
+  DEFAULT_REVIEW_SELS=[["","",""],["","",""],["","",""]];
+  CONTENT_DEFAULT.reviewSels.slice(0,3).forEach(function(arr,wi){
+    if(Array.isArray(arr)) arr.slice(0,3).forEach(function(id,i){ if(id) DEFAULT_REVIEW_SELS[wi][i]=id; });
+  });
+}
+/* 应用内容默认值到初始状态（若 localStorage 中存有本机保存内容，loadContent 会覆盖之） */
+rowNotes = DEFAULT_ROW_NOTES.slice();
+if(DEFAULT_REVIEW_SELS) reviewSels = DEFAULT_REVIEW_SELS.map(function(a){ return a.slice(); });
 
 function defaultLayout(){
   var dl=CORE.defaultLayout;
@@ -1165,6 +1187,71 @@ document.getElementById("saveContent").onclick=function(){
     b.classList.add("saved");
     setTimeout(function(){ b.innerHTML=orig; b.classList.remove("saved"); }, 2500);
   }catch(e){ alert("保存失败："+e.message); }
+};
+/* ---- 内容导出 / 导入：用于把本机编辑的文字内容迁移到其他设备或固化为线上默认值 ---- */
+function normalizeLayout(a){
+  function norm(it){ return {id:(it&&it.id)||uid(), src:(it&&it.src)||"p1", key:(it&&it.key)||null, focus:!!(it&&it.focus)}; }
+  if(!Array.isArray(a)) return null;
+  if(a.length && Array.isArray(a[0])) return a.map(function(row){ return row.map(norm); });
+  var rows=[]; for(var i=0;i<a.length;i+=4){ rows.push(a.slice(i,i+4).map(norm)); }
+  return rows;
+}
+function applyContentBundle(d){
+  var c = d && d.content ? d.content : d;
+  if(!c || typeof c!=="object") throw new Error("文件内容为空或格式不正确");
+  if(Array.isArray(d.layout)){
+    var L=normalizeLayout(d.layout);
+    if(L){ layout=L; save(); try{ localStorage.setItem(LS_SAVED_KEY, JSON.stringify(layout)); }catch(e){} }
+  }
+  if(Array.isArray(c.logic)&&c.logic.length) logicText=c.logic.slice();
+  if(Array.isArray(c.rowNotes)) rowNotes=c.rowNotes.slice();
+  if(Array.isArray(c.history)) logicHistory=c.history.slice();
+  reviewSels=[["","",""],["","",""],["","",""]];
+  if(Array.isArray(c.reviewSels)){
+    c.reviewSels.slice(0,3).forEach(function(arr,wi){
+      if(Array.isArray(arr)) arr.slice(0,3).forEach(function(id,i){ if(id) reviewSels[wi][i]=id; });
+    });
+  }
+  if(Array.isArray(c.reviewTitles)&&c.reviewTitles.length>=3) reviewTitles=c.reviewTitles.slice(0,3);
+  if(Array.isArray(c.reviewNoteText)&&c.reviewNoteText.length) reviewNoteText=c.reviewNoteText.slice();
+  logicImages = (c.images && typeof c.images==="object") ? c.images : {};
+  reviewImages = (c.reviewImages && typeof c.reviewImages==="object") ? c.reviewImages : {};
+  try{
+    localStorage.setItem(CONTENT_SAVED_KEY, JSON.stringify(contentPayload()));
+    saveContentAuto();
+  }catch(e){ alert("写入本地存储失败（可能超出容量）："+e.message); }
+  renderAll();
+  renderLogic();
+  [0,1,2].forEach(function(i){ populateReviewSelects(i); drawReviewChartFromSel(i); });
+  reviewTitles.forEach(function(t,i){ var el=document.querySelector('.review-title[data-idx="'+i+'"]'); if(el) el.value=t||DEFAULT_REVIEW_TITLES[i]; });
+  renderReviewNoteBox();
+}
+document.getElementById("exportContent").onclick=function(){
+  try{
+    readReviewTitles();
+    var payload={__type__:"nrCoreContent", version:1,
+                 exportedAt:new Date().toLocaleString('zh-CN'),
+                 layout:layout, content:contentPayload()};
+    var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;
+    a.download="nr_core_content_"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }catch(e){ alert("导出失败："+e.message); }
+};
+document.getElementById("importContent").onclick=function(){ document.getElementById("importFile").click(); };
+document.getElementById("importFile").onchange=function(e){
+  var f=e.target.files && e.target.files[0];
+  if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{ applyContentBundle(JSON.parse(fr.result)); alert("导入成功，内容已应用到本页。"); }
+    catch(err){ alert("导入失败："+err.message); }
+    e.target.value="";
+  };
+  fr.readAsText(f,"utf-8");
 };
 document.getElementById("editLogic").onclick=openLogicEdit;
 document.getElementById("logicClose").onclick=closeLogicEdit;
