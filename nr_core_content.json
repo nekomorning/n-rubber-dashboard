@@ -136,8 +136,8 @@
       "  本轮走强整体%%缺乏较硬的基本面驱动%%，也有资金炒作厄尔尼诺的因素。当下%%轮胎厂存在负反馈%%，抵触高价，刚需采购，控产降库。@@预计后市路径：@@天气好转→产区上量→%%原料下跌去修复加工利润%% → %%偏空%%"
     ],
     "reviewImages": {},
-    "savedAt": "2026/9/3 15:33:27",
-    "savedAtISO": "2026-09-03T07:33:27.098Z"
+    "savedAt": "2026/9/3 16:47:57",
+    "savedAtISO": "2026-09-03T08:47:57.670Z"
   },
   "layout": {
     "v": [
@@ -219,16 +219,22 @@
           "focus": false
         },
         {
-          "id": "cmtaxyrmk1c4",
-          "src": "p8",
-          "key": "p8::泰国::prod",
-          "focus": false
+          "id": "cmtla812t6qe",
+          "src": "p1",
+          "key": "p1::水杯价差",
+          "focus": true
         },
         {
           "id": "cmtay0jsf6pq",
           "src": "chain",
           "key": "chain::泰国天胶+轮胎合计出口",
           "focus": true
+        },
+        {
+          "id": "cmtaxyrmk1c4",
+          "src": "p8",
+          "key": "p8::泰国::prod",
+          "focus": false
         }
       ],
       [
@@ -342,7 +348,7 @@
         }
       ]
     ],
-    "savedAtISO": "2026-09-03T07:33:27.098Z"
+    "savedAtISO": "2026-09-03T08:47:57.670Z"
   },
-  "savedAtISO": "2026-09-03T07:33:27.098Z"
+  "savedAtISO": "2026-09-03T08:47:57.670Z"
 }
