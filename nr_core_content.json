@@ -36,6 +36,14 @@
       {
         "cardId": "cmtk7nqaj3s",
         "text": "印尼产区（产量占全球15%）：整体偏干；产量下滑；出口量大幅下滑"
+      },
+      {
+        "cardId": "cmtl7f1d921x",
+        "text": "盘面结构及品种价差："
+      },
+      {
+        "cardId": "cmtl7gszs4j9",
+        "text": "盘面结构：8月以来增仓大涨，近期减仓跌；贸易商加仓非标套利；月间C结构"
       }
     ],
     "history": [
@@ -107,9 +115,9 @@
         "p1|p1::NR-SICOM"
       ],
       [
-        "p8|p8::中国::imp",
-        "p8|p8::中国::cons",
-        "p2|p2::深色其中混合胶库存"
+        "p2|p2::深色其中混合胶库存",
+        "p5|p5::m_cn",
+        "p8|p8::中国::cons"
       ]
     ],
     "reviewTitles": [
@@ -128,8 +136,8 @@
       "  本轮走强整体%%缺乏较硬的基本面驱动%%，也有资金炒作厄尔尼诺的因素。当下%%轮胎厂存在负反馈%%，抵触高价，刚需采购，控产降库。@@预计后市路径：@@天气好转→产区上量→%%原料下跌去修复加工利润%% → %%偏空%%"
     ],
     "reviewImages": {},
-    "savedAt": "2026/9/2 22:50:28",
-    "savedAtISO": "2026-09-02T14:50:28.612Z"
+    "savedAt": "2026/9/3 15:33:27",
+    "savedAtISO": "2026-09-03T07:33:27.098Z"
   },
   "layout": {
     "v": [
@@ -162,6 +170,38 @@
           "id": "cmtay4iiy7gl",
           "src": "p1",
           "key": "p1::BR-NR价差",
+          "focus": false
+        }
+      ],
+      [
+        {
+          "id": "cmtl7gszs4j9",
+          "src": "p1",
+          "key": "p1::RU01收盘价",
+          "focus": false
+        },
+        {
+          "id": "cmtl7flzr24v",
+          "src": "p1",
+          "key": "p1::RU+NR总持仓",
+          "focus": true
+        },
+        {
+          "id": "cmtl7h7fr7n",
+          "src": "p1",
+          "key": "p1::非标基差：泰混-RU01",
+          "focus": false
+        },
+        {
+          "id": "cmtl7fxll25n",
+          "src": "p1",
+          "key": "p1::RU1-5月差",
+          "focus": false
+        },
+        {
+          "id": "cmtl7g59u7c1",
+          "src": "p1",
+          "key": "p1::NR连一-连二月差",
           "focus": false
         }
       ],
@@ -302,7 +342,7 @@
         }
       ]
     ],
-    "savedAtISO": "2026-09-02T14:50:28.612Z"
+    "savedAtISO": "2026-09-03T07:33:27.098Z"
   },
-  "savedAtISO": "2026-09-02T14:50:28.612Z"
+  "savedAtISO": "2026-09-03T07:33:27.098Z"
 }
