@@ -562,7 +562,7 @@ function drawSeason(div, ind, xlabels, years){
       ps.forEach(function(p){ s+="<br>"+p.marker+p.seriesName+"年： <b>"+fmt(p.value[1],ind.dec)+"</b>"; });
       return s;
     }},
-    xAxis:{type:"value", min:0, max:365, interval:1, axisLabel:{fontSize:10,color:"#8a93a3", formatter:function(v){ return ticks[v]||""; }}, axisTick:{show:false}, axisLine:{lineStyle:{color:"#dde3ec"}}, splitLine:{show:false}},
+    xAxis:{type:"value", min:0, max:Math.max((xlabels&&xlabels.length?xlabels.length:366)-1,1), interval:1, axisLabel:{fontSize:10,color:"#8a93a3", formatter:function(v){ return ticks[v]||""; }}, axisTick:{show:false}, axisLine:{lineStyle:{color:"#dde3ec"}}, splitLine:{show:false}},
     yAxis:{type:"value", scale:true, axisLabel:{fontSize:10,color:"#8a93a3", formatter:function(v){ return Math.abs(v)>=10000?(v/10000)+"万":(Math.abs(v)>=1000?(v/1000)+"k":v); }}, splitLine:{show:false}},
     series:series
   });
