@@ -139,8 +139,8 @@
       "  ②确实发生减产→原料强势→**成本支撑盘面上涨修复加工利润**（这个逻辑缺需求腿：缺乏下游需求支撑及新的边际利多驱动，厄尔尼诺炒作已经计价了减产，上方空间有限）"
     ],
     "reviewImages": {},
-    "savedAt": "2026/9/4 10:50:40",
-    "savedAtISO": "2026-09-04T02:50:40.289Z"
+    "savedAt": "2026/9/4 13:28:08",
+    "savedAtISO": "2026-09-04T05:28:08.238Z"
   },
   "layout": {
     "v": [
@@ -254,15 +254,15 @@
           "focus": false
         },
         {
-          "id": "cmtk7oaer7m3",
-          "src": "p8",
-          "key": "p8::印尼::prod",
-          "focus": false
-        },
-        {
           "id": "cmtk7oydw2x9",
           "src": "chain",
           "key": "chain::印尼天胶+轮胎合计出口",
+          "focus": false
+        },
+        {
+          "id": "cmtk7oaer7m3",
+          "src": "p8",
+          "key": "p8::印尼::prod",
           "focus": false
         }
       ],
@@ -351,7 +351,7 @@
         }
       ]
     ],
-    "savedAtISO": "2026-09-04T02:50:40.289Z"
+    "savedAtISO": "2026-09-04T05:28:08.238Z"
   },
-  "savedAtISO": "2026-09-04T02:50:40.289Z"
+  "savedAtISO": "2026-09-04T05:28:08.238Z"
 }
