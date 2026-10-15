@@ -1577,7 +1577,7 @@ function renderFilterChart(){
   var dirName = (dir === "import") ? "进口" : "出口";
 
   // 计算要渲染的图表配置列表
-  // 多图触发条件：focus 为具体国家 + 来源国=全球合计（自动取 Top 5 counterpart）
+  // 多图触发条件：focus 为具体国家 + 来源国=全球合计（自动取 Top 20 counterpart）
   var charts = [];
   if(focus !== "全球合计" && cparty === "全球合计"){
     var top5 = topCounterparts(dir, focus, rubber);
