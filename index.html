@@ -1753,6 +1753,22 @@ function exportLongImage(btn){
 
     var tiles=[];
     var __ovPrev = {D:D, DEC:DEC, DEC_PCT:DEC_PCT, UNIT:UNIT, yV:yearVisible};
+    /* 板块未渲染（懒加载）时 BCTX 无该 pid → 退回按该页默认规则（最近 4 年可见）构造。
+       否则 yearVisible={} 会让 exportOption 的 legend.selected 全为 undefined，
+       ECharts 视为全部不选中 → 天气图只剩「预报」一条线（2026-10-22 修）。 */
+    function __ovYV(ds){
+      var yv={}, ys=(ds && ds.years) ? ds.years.slice() : [];
+      if(!ys.length){
+        var seen={}, obj=(ds && ds.indicators)||{};
+        Object.keys(obj).forEach(function(k){
+          var se=(obj[k] && obj[k].series)||{};
+          Object.keys(se).forEach(function(y){ if(se[y]&&se[y].length) seen[String(y)]=1; });
+        });
+        ys=Object.keys(seen).sort();
+      }
+      ys.forEach(function(y,i){ yv[String(y)] = (i >= ys.length-4); });
+      return yv;
+    }
     sheets.forEach(function(s){
       var Dp=s.D;
       /* 全览页：逐页切换全局上下文，供 exportOption 取用 */
@@ -1760,7 +1776,8 @@ function exportLongImage(btn){
       DEC = (typeof Dp.dec === 'number') ? Dp.dec : 2;
       DEC_PCT = (typeof Dp.decPct === 'number') ? Dp.decPct : 2;
       UNIT = Dp.unit || '万吨';
-      yearVisible = (BCTX && BCTX[s.key]) ? (BCTX[s.key].yearVisible || {}) : {};
+      var __c = (BCTX && BCTX[s.key]) ? BCTX[s.key].yearVisible : null;
+      yearVisible = (__c && Object.keys(__c).length) ? __c : __ovYV(Dp);
       renderLayout(s).forEach(function(sec){
         sec.rows.forEach(function(row){
           row.charts.forEach(function(ch){
