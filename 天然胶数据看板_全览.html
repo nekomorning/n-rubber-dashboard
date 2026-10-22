@@ -1314,18 +1314,18 @@ function renderBoard(bd){
     });
     /* 「导出日报」按钮：置于年份 chip 之后、与 chip 同一 flex 行，
        盒模型与 .ychip 一致 → 同高同基线对齐（2026-10-22 调整）。
-       仅 std 板块（p1~p7）有年份筛选条，按钮随之出现；
-       p8/gbal/plant 为专属渲染器、无年份条，故不提供。 */
-    if(bd.kind === 'std'){
+       行为与原看板「导出高清长图」完全一致：一次导出 p1 日度价格 + p2 天胶库存
+       + p3 下游轮胎 全量 + p4 天气（泰/科/越/中）合并长图（PNG）。
+       仅高频数据(hf)标签的板块显示；月度/核心标签不放。 */
+    if(bd.kind === 'std' && bd.tab === 'hf'){
       var ebtn = document.createElement('button');
       ebtn.className = 'exp-daily-btn';
       ebtn.type = 'button';
       ebtn.textContent = '导出日报';
-      ebtn.title = '导出本板块全部图表为高清长图（PNG）';
+      ebtn.title = '导出日报长图（PNG）：日度价格 + 天胶库存 + 下游轮胎 + 天气·泰/科/越/中';
       ebtn.onclick = function(ev){
         ev.preventDefault(); ev.stopPropagation();
-        window.__EXP_TITLE = bd.label;
-        exportBoardDaily(bd.pid, ebtn);
+        exportLongImage(ebtn);
       };
       chips.appendChild(ebtn);
     }
@@ -1621,168 +1621,24 @@ function boot(){
   }, 180); });
 }
 
-/* ================= 导出日报（按当前板块）=================
-   复用原看板「导出高清长图」的实现：逐图 getDataURL() → 原生 canvas 拼合 → 模态框预览。
-   与原页级的区别：导出范围是「当前板块」而非 p1~p4 合并。
-   板块的图表清单取自该板块自身的 layout（std 页）或专属渲染器的图表定义。 */
-var EXP_DAILY_PID = null;   /* 正在导出的板块 pid */
-
-function expBoardCharts(pid){
-  /* 返回 [{key,title,unit,dec}] —— 板块内要导出的图表清单 */
-  var ds = window.__ALL__[pid];
-  if(!ds) return [];
-  var out = [];
-  if(ds.layout){
-    (ds.layout||[]).forEach(function(sec){
-      (sec.rows||[]).forEach(function(row){
-        (row.charts||[]).forEach(function(ch){ out.push(ch); });
-      });
-    });
-  }
-  return out;
-}
-
-function exportBoardDaily(pid, btn){
-  var ds = window.__ALL__[pid];
-  if(!ds){ alert('该板块无数据可导出。'); return; }
-  var bd = BYID['b-' + pid];
-  var charts = expBoardCharts(pid);
-  if(!charts.length){ alert('该板块没有可导出的图表。'); return; }
-
-  var oldHtml = btn ? btn.innerHTML : '';
-  if(btn){ btn.innerHTML = '生成中…'; btn.disabled = true; }
-  try{
-    var TILE_W = 440, TILE_H = 340, SCALE = 2, GAP = 12, MARGIN = 24, BANNER = 56;
-    var PAGE_TITLE_H = 52, SECTION_H = 44, ROW_H = 36;
-    var EXP_ACCENT = '#0f4c81';
-
-    /* 板块内部分组：按 layout 的 section/row 还原层级 */
-    var groups = [];
-    (ds.layout||[]).forEach(function(sec){
-      var rows = (sec.rows||[]).map(function(row){
-        return {label: row.label, charts: row.charts||[]};
-      }).filter(function(r){ return r.charts.length; });
-      if(rows.length) groups.push({section: sec.section, rows: rows});
-    });
-    if(!groups.length){ alert('该板块没有可导出的图表。'); return; }
-
-    var maxCols = 1;
-    groups.forEach(function(g){ g.rows.forEach(function(r){
-      maxCols = Math.max(maxCols, Math.min(r.charts.length, 5));
-    }); });
-    var contentW = maxCols*TILE_W + (maxCols-1)*GAP;
-    var Wcss = contentW + 2*MARGIN;
-    var Hcss = MARGIN + BANNER + 22;
-    groups.forEach(function(g){
-      Hcss += PAGE_TITLE_H;
-      Hcss += SECTION_H;
-      g.rows.forEach(function(r){
-        if(r.label) Hcss += ROW_H;
-        Hcss += TILE_H + GAP;
-      });
-    });
-    Hcss = Hcss - GAP + MARGIN;
-    var scale = SCALE;
-    if(Math.max(Wcss,Hcss)*scale > 16384) scale = 16384/Math.max(Wcss,Hcss);
-    scale = Math.max(1, Math.floor(scale*100)/100);
-
-    var host = document.getElementById('expHost');
-    if(!host){ host = document.createElement('div'); host.id = 'expHost';
-      host.style.cssText = 'position:fixed;left:-100000px;top:0;width:0;height:0;overflow:hidden;';
-      document.body.appendChild(host); }
-
-    /* 临时把 D / DEC / DEC_PCT / UNIT 切到该板块上下文 —— exportOption 依赖这些全局量 */
-    var prevD = D, prevDEC = DEC, prevDECP = DEC_PCT, prevUNIT = UNIT, prevYV = yearVisible;
-    D = ds;
-    DEC = (typeof ds.dec === 'number') ? ds.dec : 2;
-    DEC_PCT = (typeof ds.decPct === 'number') ? ds.decPct : 2;
-    UNIT = ds.unit || '万吨';
-    yearVisible = boardCtx(pid).yearVisible || {};
-
-    var tiles = [];
-    try{
-      groups.forEach(function(g){ g.rows.forEach(function(row){
-        row.charts.forEach(function(ch){
-          var div = document.createElement('div');
-          div.style.width = TILE_W+'px'; div.style.height = TILE_H+'px';
-          host.appendChild(div);
-          var c = echarts.init(div, null, {width:TILE_W, height:TILE_H});
-          c.setOption(exportOption(ds, ch));
-          tiles.push(c.getDataURL({pixelRatio:scale, backgroundColor:'#ffffff'}));
-          c.dispose(); div.remove();
-        });
-      }); });
-    }finally{
-      D = prevD; DEC = prevDEC; DEC_PCT = prevDECP; UNIT = prevUNIT; yearVisible = prevYV;
-    }
-
-    var textOps = [], positions = [], curY = MARGIN+BANNER+22, tileIdx = 0;
-    var title = (bd ? (bd.n + '. ' + bd.label) : '数据看板') + '　数据截至：' + (ds.latestDataDate || '—');
-    textOps.push({x:MARGIN, y:curY+PAGE_TITLE_H/2, text:title, size:28, color:EXP_ACCENT, bold:true});
-    curY += PAGE_TITLE_H;
-    groups.forEach(function(g){
-      textOps.push({x:MARGIN, y:curY+SECTION_H/2, text:'▍'+g.section, size:24, color:EXP_ACCENT, bold:true});
-      curY += SECTION_H;
-      g.rows.forEach(function(row){
-        if(row.label){
-          textOps.push({x:MARGIN, y:curY+ROW_H/2, text:row.label, size:17, color:'#6b7686', bold:false});
-          curY += ROW_H;
-        }
-        var x = MARGIN;
-        for(var k = 0; k < row.charts.length; k++){
-          positions.push({url:tiles[tileIdx], x:Math.round(x*scale), y:Math.round(curY*scale),
-                          w:Math.round(TILE_W*scale), h:Math.round(TILE_H*scale)});
-          tileIdx++; x += TILE_W + GAP;
-        }
-        curY += TILE_H + GAP;
-      });
-    });
-
-    var W = Math.round(Wcss*scale), H = Math.round(Hcss*scale);
-    var canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#f4f6fa'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle = EXP_ACCENT; ctx.fillRect(0,0,W,Math.round(BANNER*scale));
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold '+(26*scale)+"px 'Microsoft YaHei',sans-serif";
-    ctx.textBaseline = 'middle';
-    ctx.fillText('天然胶数据看板 · ' + (bd ? bd.label : '日报') + '（高清长图）', 24*scale, BANNER*scale/2);
-    textOps.forEach(function(t){
-      ctx.fillStyle = t.color;
-      ctx.font = (t.bold?'bold ':'')+(t.size*scale)+"px 'Microsoft YaHei','PingFang SC',sans-serif";
-      ctx.textBaseline = 'middle';
-      ctx.fillText(t.text, t.x*scale, t.y*scale);
-    });
-    var pending = positions.map(function(p){
-      return new Promise(function(res){
-        var im = new Image();
-        im.onload = function(){ p._img = im; res(); };
-        im.onerror = function(){ res(); };
-        im.src = p.url;
-      });
-    });
-    Promise.all(pending).then(function(){
-      positions.forEach(function(p){
-        if(p._img) ctx.drawImage(p._img, p.x, p.y, p.w, p.h);
-        ctx.strokeStyle = '#e5e9f0'; ctx.lineWidth = Math.max(1, Math.round(scale));
-        ctx.strokeRect(p.x, p.y, p.w, p.h);
-      });
-      showExpModal(canvas);
-      if(btn){ btn.innerHTML = oldHtml; btn.disabled = false; }
-    });
-  }catch(e){
-    console.error(e);
-    alert('导出失败：'+(e && e.message || e));
-    if(btn){ btn.innerHTML = oldHtml; btn.disabled = false; }
-  }
-}
-
-window.exportBoardDaily = exportBoardDaily;
 
 /* ===== 高清长图导出：逐图 getDataURL() 后在原生 canvas 上拼合 ===== */
 var TILE_W=440, TILE_H=340, SCALE=2, GAP=12, MARGIN=24, BANNER=56;
 var EXP_ACCENT="#0f4c81";
+// 高清长图仅纳入天气数据(p4)中以下国家的图表；其余国家（印尼/印度/马来等）不纳入
+var EXPORT_COUNTRIES={"泰国":1,"科特迪瓦":1,"越南":1,"中国":1};
 
 // 返回某张表的「实际参与长图拼合」布局：p4 仅取泰/科/越/中，其余页原样返回
+function renderLayout(s){
+  if(s.key!=="p4") return s.D.layout;
+  var out=[];
+  (s.D.layout||[]).forEach(function(sec){
+    var rows=(sec.rows||[]).filter(function(row){ return EXPORT_COUNTRIES[row.country]; });
+    if(rows.length) out.push({section:sec.section, rows:rows});
+  });
+  return out;
+}
+
 function expMonthTicks(D){
   var idx={};
   (D.xlabels||[]).forEach(function(l,i){ if(l.slice(3)==="01") idx[i]=parseInt(l.slice(0,2),10)+"月"; });
@@ -1844,6 +1700,143 @@ function exportOption(D, ch){
   };
 }
 
+function exportLongImage(btn){
+  if(!btn){ btn=document.getElementById("btnExport"); }
+  var oldHtml=btn.innerHTML;
+  btn.innerHTML="生成中…"; btn.disabled=true;
+  try{
+    // 合并导出：仅 日度价格(p1)·天胶库存(p2)·下游轮胎(p3) 三页全量
+    //         + 天气数据(p4) 中 泰国/科特迪瓦/越南/中国 的图表。
+    //         注意：p5(天然橡胶进口)及以后新增页面(如轮胎物流等)一律不纳入高清长图。
+    var ALL=window.__ALL__||{};
+    var EXPORT_SHEETS=["p1","p2","p3","p4"];   // 固定白名单，新增页面请勿加入
+    var sheets=[];
+    EXPORT_SHEETS.forEach(function(k){
+      var s=ALL[k];
+      if(s && s.layout) sheets.push({key:k, title:(s.pageTitle||"天然胶数据看板"), D:s});
+    });
+    if(!sheets.length && D && D.layout) sheets.push({key:(D.pageId||"x"), title:(D.pageTitle||"天然胶数据看板"), D:D});
+    sheets=sheets.filter(function(s){ return s.D && s.D.layout; });
+
+    var PAGE_TITLE_H=52, SECTION_H=44, ROW_H=36;
+    var maxCols=1;
+    sheets.forEach(function(s){
+      renderLayout(s).forEach(function(sec){
+        sec.rows.forEach(function(row){
+          var cols=Math.min(row.charts.length,5);
+          if(cols>maxCols) maxCols=cols;
+        });
+      });
+    });
+    var contentW=maxCols*TILE_W+(maxCols-1)*GAP;
+    var Wcss=contentW+2*MARGIN;
+    var Hcss=MARGIN+BANNER+22;
+    sheets.forEach(function(s){
+      Hcss+=PAGE_TITLE_H;
+      renderLayout(s).forEach(function(sec){
+        Hcss+=SECTION_H;
+        sec.rows.forEach(function(row){
+          if(row.label) Hcss+=ROW_H;
+          Hcss+=TILE_H+GAP;
+        });
+      });
+    });
+    Hcss=Hcss-GAP+MARGIN;
+    var scale=SCALE;
+    if(Math.max(Wcss,Hcss)*scale>16384) scale=16384/Math.max(Wcss,Hcss);
+    scale=Math.max(1, Math.floor(scale*100)/100);
+
+    var host=document.getElementById("expHost");
+    if(!host){ host=document.createElement("div"); host.id="expHost";
+      host.style.cssText="position:fixed;left:-100000px;top:0;width:0;height:0;overflow:hidden;";
+      document.body.appendChild(host); }
+
+    var tiles=[];
+    var __ovPrev = {D:D, DEC:DEC, DEC_PCT:DEC_PCT, UNIT:UNIT, yV:yearVisible};
+    sheets.forEach(function(s){
+      var Dp=s.D;
+      /* 全览页：逐页切换全局上下文，供 exportOption 取用 */
+      D = Dp;
+      DEC = (typeof Dp.dec === 'number') ? Dp.dec : 2;
+      DEC_PCT = (typeof Dp.decPct === 'number') ? Dp.decPct : 2;
+      UNIT = Dp.unit || '万吨';
+      yearVisible = (BCTX && BCTX[s.key]) ? (BCTX[s.key].yearVisible || {}) : {};
+      renderLayout(s).forEach(function(sec){
+        sec.rows.forEach(function(row){
+          row.charts.forEach(function(ch){
+            var div=document.createElement("div");
+            div.style.width=TILE_W+"px"; div.style.height=TILE_H+"px";
+            host.appendChild(div);
+            var c=echarts.init(div, null, {width:TILE_W, height:TILE_H});
+            c.setOption(exportOption(Dp, ch));
+            tiles.push(c.getDataURL({pixelRatio:scale, backgroundColor:"#ffffff"}));
+            c.dispose(); div.remove();
+          });
+        });
+      });
+    });
+
+    /* 恢复全览页全局上下文 */
+    D = __ovPrev.D; DEC = __ovPrev.DEC; DEC_PCT = __ovPrev.DEC_PCT;
+    UNIT = __ovPrev.UNIT; yearVisible = __ovPrev.yV;
+
+    var textOps=[], positions=[], curY=MARGIN+BANNER+22, tileIdx=0;
+    sheets.forEach(function(s){
+      var Dp=s.D;
+      textOps.push({x:MARGIN, y:curY+PAGE_TITLE_H/2, text:s.title+"　数据截至："+Dp.latestDataDate, size:28, color:EXP_ACCENT, bold:true});
+      curY+=PAGE_TITLE_H;
+      renderLayout(s).forEach(function(sec){
+        textOps.push({x:MARGIN, y:curY+SECTION_H/2, text:"▍"+sec.section, size:24, color:EXP_ACCENT, bold:true});
+        curY+=SECTION_H;
+        sec.rows.forEach(function(row){
+          if(row.label){ textOps.push({x:MARGIN, y:curY+ROW_H/2, text:row.label, size:17, color:"#6b7686", bold:false}); curY+=ROW_H; }
+          var x=MARGIN;
+          for(var k=0;k<row.charts.length;k++){
+            positions.push({url:tiles[tileIdx], x:Math.round(x*scale), y:Math.round(curY*scale), w:Math.round(TILE_W*scale), h:Math.round(TILE_H*scale)});
+            tileIdx++; x+=TILE_W+GAP;
+          }
+          curY+=TILE_H+GAP;
+        });
+      });
+    });
+
+    var W=Math.round(Wcss*scale), H=Math.round(Hcss*scale);
+    var canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
+    var ctx=canvas.getContext("2d");
+    ctx.fillStyle="#f4f6fa"; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=EXP_ACCENT; ctx.fillRect(0,0,W,Math.round(BANNER*scale));
+    ctx.fillStyle="#ffffff"; ctx.font="bold "+(26*scale)+"px 'Microsoft YaHei',sans-serif";
+    ctx.textBaseline="middle"; ctx.fillText("天然胶数据看板 · 高清长图（页面一~五 全量）", 24*scale, BANNER*scale/2);
+    textOps.forEach(function(t){
+      ctx.fillStyle=t.color;
+      ctx.font=(t.bold?"bold ":"")+(t.size*scale)+"px 'Microsoft YaHei','PingFang SC',sans-serif";
+      ctx.textBaseline="middle";
+      ctx.fillText(t.text, t.x*scale, t.y*scale);
+    });
+    var pending=positions.map(function(p){
+      return new Promise(function(res){
+        var im=new Image();
+        im.onload=function(){ p._img=im; res(); };
+        im.onerror=function(){ res(); };
+        im.src=p.url;
+      });
+    });
+    Promise.all(pending).then(function(){
+      positions.forEach(function(p){
+        if(p._img) ctx.drawImage(p._img, p.x, p.y, p.w, p.h);
+        ctx.strokeStyle="#e5e9f0"; ctx.lineWidth=Math.max(1,Math.round(scale));
+        ctx.strokeRect(p.x, p.y, p.w, p.h);
+      });
+      showExpModal(canvas);
+      btn.innerHTML=oldHtml; btn.disabled=false;
+    });
+  }catch(e){
+    console.error(e);
+    alert("导出失败："+(e&&e.message||e));
+    btn.innerHTML=oldHtml; btn.disabled=false;
+  }
+}
+
 function showExpModal(canvas){
   var modal=document.getElementById('expModal');
   var body=document.getElementById('expModalBody');
@@ -1876,7 +1869,7 @@ function downloadExpImage(){
   if(!canvas) return;
   var d=new Date(); var p=function(n){return ('0'+n).slice(-2);};
   var a=document.createElement('a');
-  a.download='天然胶数据看板_高清长图_'+(window.__EXP_TITLE||'')+'_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.png';
+  a.download='天然胶数据看板_日报长图_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.png';
   a.href=canvas.toDataURL('image/png');
   a.click();
 }
