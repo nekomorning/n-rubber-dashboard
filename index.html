@@ -305,10 +305,10 @@ body{padding-bottom:40px;}
   color:#a4acb9;cursor:pointer;transition:all .15s;font-family:inherit;}
 .ychip.on{color:#1f2733;font-weight:600;background:#f4f6fa;}
 .ychip:hover{box-shadow:0 1px 4px rgba(15,30,50,.15);}
-/* 「导出日报」按钮：位于年份筛选条之后 */
-.exp-daily-btn{font-size:12px;padding:3px 12px;border-radius:12px;border:1.5px solid #0f4c81;
+/* 「导出日报」按钮：与年份 chip 同高同基线（盒模型完全一致：font-size/padding/border/line-height） */
+.exp-daily-btn{font-size:12px;padding:2px 10px;border-radius:12px;border:1.5px solid #0f4c81;
   background:#0f4c81;color:#fff;cursor:pointer;transition:all .15s;font-family:inherit;
-  white-space:nowrap;align-self:center;}
+  line-height:normal;white-space:nowrap;margin-left:4px;}
 .exp-daily-btn:hover{background:#2b7cff;border-color:#2b7cff;box-shadow:0 1px 5px rgba(15,76,129,.28);}
 .exp-daily-btn:disabled{opacity:.6;cursor:default;}
 .board-body{min-height:1px;}
@@ -1312,23 +1312,24 @@ function renderBoard(bd){
         chips.appendChild(b);
       })(y);
     });
+    /* 「导出日报」按钮：置于年份 chip 之后、与 chip 同一 flex 行，
+       盒模型与 .ychip 一致 → 同高同基线对齐（2026-10-22 调整）。
+       仅 std 板块（p1~p7）有年份筛选条，按钮随之出现；
+       p8/gbal/plant 为专属渲染器、无年份条，故不提供。 */
+    if(bd.kind === 'std'){
+      var ebtn = document.createElement('button');
+      ebtn.className = 'exp-daily-btn';
+      ebtn.type = 'button';
+      ebtn.textContent = '导出日报';
+      ebtn.title = '导出本板块全部图表为高清长图（PNG）';
+      ebtn.onclick = function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        window.__EXP_TITLE = bd.label;
+        exportBoardDaily(bd.pid, ebtn);
+      };
+      chips.appendChild(ebtn);
+    }
     head.appendChild(chips);
-  }
-  /* 「导出日报」按钮：放在年份筛选条之后（2026-10-22）。
-     导出当前板块全部图表为高清长图（PNG），逻辑见 exportBoardDaily。
-     仅 std 板块（p1~p7）有年份筛选条，按钮随之出现；p8/gbal/plant 为专属渲染器，无年份条故不提供。 */
-  if(bd.kind === 'std'){
-    var ebtn = document.createElement('button');
-    ebtn.className = 'exp-daily-btn';
-    ebtn.type = 'button';
-    ebtn.textContent = '导出日报';
-    ebtn.title = '导出本板块全部图表为高清长图（PNG）';
-    ebtn.onclick = function(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      window.__EXP_TITLE = bd.label;
-      exportBoardDaily(bd.pid, ebtn);
-    };
-    head.appendChild(ebtn);
   }
   mk.appendChild(head);
 
