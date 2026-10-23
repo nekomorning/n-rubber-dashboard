@@ -405,7 +405,7 @@ table.data td.hl{background:#eef3fa;}
 <body>
 <div class="hero">
   <h1>天然胶数据看板 · 全览</h1>
-  <div class="sub"><b>高频数据</b>（日度价格 / 天胶库存 / 下游轮胎 / 天气数据）· <b>贸易流</b>（天胶+轮胎折合计进出口 / 天然橡胶进出口 / 轮胎进出口 / 重卡）· <b>平衡表</b>（全球年度平衡 / ANRPC 平衡表 / 种面单产）· <b>核心逻辑</b>（研究框架 + 全球天胶 / 中国天胶 1–8 月累计表），共 217 张图。左侧目录 hover 浮现、滚动自动高亮；数据板块保留独立年份筛选，标题下方标注数据截至日。</div>
+  <div class="sub"><b>高频数据</b>（日度价格 / 天胶库存 / 下游轮胎 / 天气数据）· <b>贸易流</b>（天胶+轮胎折合计进出口 / 天然橡胶进出口 / 轮胎进出口 / 重卡）· <b>平衡表</b>（全球年度平衡 / ANRPC 平衡表 / 种面单产）· <b>核心逻辑</b>（研究框架 + 全球天胶 / 中国天胶 1–8 月累计表），共 216 张图。左侧目录 hover 浮现、滚动自动高亮；数据板块保留独立年份筛选，标题下方标注数据截至日。</div>
   <div class="note">图表懒加载：首次进入标签时建骨架，滚动到板块附近才初始化　|　高频数据板块标题栏「导出日报」可导出整份日报长图（PNG：日度价格 + 天胶库存 + 下游轮胎 + 天气·泰/科/越/中）</div>
 </div>
 <div class="toptabs">
@@ -1722,7 +1722,7 @@ function renderChainPanel(){
 
 
 /* ================= 全览页调度 ================= */
-var BOARDS = [{"tab": "hf", "pid": "p1", "label": "日度价格", "sub": "盘面结构 / 原料及利润 / 现货价格价差", "kind": "std", "cnt": 48}, {"tab": "hf", "pid": "p2", "label": "天胶库存", "sub": "深色胶 · 浅色胶 · 仓单", "kind": "std", "cnt": 11}, {"tab": "hf", "pid": "p3", "label": "下游轮胎", "sub": "开工 · 产量 · 库存天数 · 利润", "kind": "std", "cnt": 10}, {"tab": "hf", "pid": "p4", "label": "天气数据", "sub": "14 个产区 · 30 天滚动降雨 / 均温 / 累计≥10mm 天数 + 16 天预报", "kind": "std", "cnt": 43}, {"tab": "trade", "pid": "chain", "label": "天胶+轮胎折合计进出口", "sub": "净流量 · 季节图 · 月度 / 年度 / 区间累计表（与贸易流页 chain 子页同源）", "kind": "chain", "cnt": 15}, {"tab": "trade", "pid": "p5", "label": "天然橡胶进出口", "sub": "出口量 · 进口量（月度季节图）", "kind": "std", "cnt": 14}, {"tab": "trade", "pid": "p6", "label": "轮胎进出口", "sub": "出口量 · 进口量 · 净进口量（月度季节图）", "kind": "std", "cnt": 25}, {"tab": "trade", "pid": "p7", "label": "重卡", "sub": "产量 / 批发 / 出口 / 内销 / 新能源 / 天然气", "kind": "std", "cnt": 8}, {"tab": "bal", "pid": "gbal", "label": "全球年度平衡", "sub": "年度绝对值 / 增速 / 增量 · 2008–2027E", "kind": "gbal", "cnt": 2}, {"tab": "bal", "pid": "p8", "label": "ANRPC 平衡表", "sub": "12 国 · 产量 / 消费量 / 产消平衡（月度季节图）", "kind": "p8", "cnt": 36}, {"tab": "bal", "pid": "plant", "label": "种面单产", "sub": "11 国 · 总面积 / 新增面积 / 割胶面积 / 开割率 / 亩产（年度）", "kind": "plant", "cnt": 5}];
+var BOARDS = [{"tab": "hf", "pid": "p1", "label": "日度价格", "sub": "盘面结构 / 原料及利润 / 现货价格价差", "kind": "std", "cnt": 48}, {"tab": "hf", "pid": "p2", "label": "天胶库存", "sub": "深色胶 · 浅色胶 · 仓单", "kind": "std", "cnt": 11}, {"tab": "hf", "pid": "p3", "label": "下游轮胎", "sub": "开工 · 产量 · 库存天数 · 利润", "kind": "std", "cnt": 10}, {"tab": "hf", "pid": "p4", "label": "天气数据", "sub": "14 个产区 · 30 天滚动降雨 / 均温 / 累计≥10mm 天数 + 16 天预报", "kind": "std", "cnt": 43}, {"tab": "trade", "pid": "chain", "label": "天胶+轮胎折合计进出口", "sub": "净流量 · 季节图 · 月度 / 年度 / 区间累计表（与贸易流页 chain 子页同源）", "kind": "chain", "cnt": 15}, {"tab": "trade", "pid": "p5", "label": "天然橡胶进出口", "sub": "出口量 · 进口量（月度季节图）", "kind": "std", "cnt": 14}, {"tab": "trade", "pid": "p6", "label": "轮胎进出口", "sub": "出口量 · 进口量 · 净进口量（月度季节图）", "kind": "std", "cnt": 25}, {"tab": "trade", "pid": "p7", "label": "重卡", "sub": "产量 / 批发 / 出口 / 内销 / 新能源 / 天然气", "kind": "std", "cnt": 8}, {"tab": "bal", "pid": "gbal", "label": "全球年度平衡", "sub": "年度绝对值 / 增速 / 增量 · 2008–2027E", "kind": "gbal", "cnt": 1}, {"tab": "bal", "pid": "p8", "label": "ANRPC 平衡表", "sub": "12 国 · 产量 / 消费量 / 产消平衡（月度季节图）", "kind": "p8", "cnt": 36}, {"tab": "bal", "pid": "plant", "label": "种面单产", "sub": "11 国 · 总面积 / 新增面积 / 割胶面积 / 开割率 / 亩产（年度）", "kind": "plant", "cnt": 5}];
 var TABS = [{"id": "hf", "label": "高频数据", "sub": "日度 / 周度频率"}, {"id": "trade", "label": "贸易流", "sub": "天胶+轮胎折合计 · 进出口 · 重卡"}, {"id": "bal", "label": "平衡表", "sub": "全球年度平衡 · ANRPC · 种面单产"}, {"id": "core", "label": "核心逻辑", "sub": "研究框架 · 全球天胶 · 中国天胶"}];
 var BYID = {};
 BOARDS.forEach(function(b){ BYID['b-' + b.pid] = b; });
@@ -1975,19 +1975,6 @@ function renderGbal(bd, ds, mk){
   box.appendChild(buildTableEl(ds.growthYears, ds.groups, ds.growth, 1));
   addSecTitle(box, '年度平衡 · 增量（万吨）');
   box.appendChild(buildTableEl(ds.deltaYears, ds.groups, ds.delta, 0));
-
-  var g2 = addGrid(box, 1);
-  var c2 = mkCard('主要国家 产量增速 %', '', '');
-  g2.appendChild(c2.el);
-  var PC = ['#C0392B', '#E67E22', '#F1C40F', '#2ECC71', '#2980B9', '#8E44AD', '#7B241C'];
-  var cols2 = [['E', '泰国'], ['F', '印尼'], ['G', '越南'], ['H', '马来'], ['N', '中国'], ['O', '印度'], ['C', '科特迪瓦']];
-  drawLines(c2.div, {
-    xlabels: ds.growthYears.map(String), dec: 1, xInterval: 0, yName: '%',
-    series: cols2.map(function(p, i){
-      return {name: p[1], color: PC[i % PC.length], width: 1.8,
-              data: ds.growthYears.map(function(y){ var r = ds.growth[String(y)]; return r ? r[p[0]] : null; })};
-    })
-  });
 }
 function buildTableEl(years, groups, tbl, dec){
   var wrap = document.createElement('div'); wrap.className = 'tbl-scroll';
