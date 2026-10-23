@@ -2201,6 +2201,10 @@ function buildWeeklyShell(root, toc){
   sm.innerHTML = '<h3>本周核心观点</h3>' + W.summary.map(function(p){ return '<p>' + p + '</p>'; }).join('');
   el.appendChild(sm);
 
+  /* ⚠️ 必须先把容器挂载进文档再初始化图表：ECharts init 依赖容器实时尺寸，
+     脱离文档时 clientWidth=0 → canvas 0×0 → 图表空白（2026-10-23 修复） */
+  root.appendChild(el);
+
   /* 分板块 */
   W.sections.forEach(function(sec, i){
     var s = document.createElement('div'); s.className = 'wk-sec'; s.id = 'b-wk-sec' + (i+1);
@@ -2236,9 +2240,10 @@ function buildWeeklyShell(root, toc){
     W.appendix.map(function(p){ return '<p><b>' + p[0] + '</b>　' + p[1] + '</p>'; }).join('') +
     '<div class="wk-sources">' + W.sources + '</div>';
   el.appendChild(ap);
-  root.appendChild(el);
 
   WK_CHARTS = allCharts.slice(from);
+  /* 保险：挂载后统一 resize 一次，确保 canvas 与容器同尺寸 */
+  WK_CHARTS.forEach(function(c){ try{ c.resize(); }catch(e){} });
   /* 目录链接（data-pid 指向 b-wk-secN，syncToc 无需改动即可高亮） */
   function tocLink(pid, txt){
     var a = document.createElement('a');
