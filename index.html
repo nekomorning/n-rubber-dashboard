@@ -406,6 +406,9 @@ table.data td.hl{background:#eef3fa;}
 .wk-appendix{background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:16px 18px;margin-top:6px;}
 .wk-appendix h3{font-size:16px;color:#0f4c81;margin:0 0 12px;padding-left:11px;border-left:4px solid #2b7cff;}
 .wk-appendix .wr-note{margin-bottom:14px;}
+/* 周报年度平衡宽表：与全览-平衡表页同款版式（年份为行 + 分组列），列多 → 收紧字号与内边距 */
+.wk-gbal-tbl{font-size:11.5px;}
+.wk-gbal-tbl th,.wk-gbal-tbl td{padding:3px 6px;}
 .wk-sources{font-size:11.5px;color:#8a93a3;line-height:1.8;margin-top:14px;border-top:1px dashed #e5e9f0;
   padding-top:10px;}
 
@@ -2072,15 +2075,20 @@ function buildTableEl(years, groups, tbl, dec){
   return wrap;
 }
 
-/* ================= 周报 · 年度平衡数据表（精简版）=================
-   表1 全球年度平衡总表：2008–2027E 产量/消费/平衡 + 同比% + 平衡增量
-   表2 主要产销国平衡：2024/2025/2026E/2027E 产量 8 国 + 消费 7 项
-   （完整 23 列国别表留在「平衡表」标签，避免周报表格过宽不可读） */
-function buildGbalWkTables(gd){
+/* ================= 周报 · 年度平衡数据表（与全览「平衡表」页同一版式）=================
+   一张宽表：年份为行；列分组 = 产量（万吨）/ 供需平衡（万吨）/ 消费量（万吨）/ 全球同比 %；
+   两级表头 + 全球总产量/全球总消费量列高亮 hl（与全览-平衡表页 buildTableEl 完全同款）。
+   2008–2027E 全年份；同比% 与平衡增量沿用原表口径（同比 2017 年起、增量 2019 年起）。 */
+function buildGbalWkTable(gd){
   var box = document.createElement('div');
-  function num(v, d){
+  var st = document.createElement('div'); st.className = 'section-title';
+  st.textContent = '年度平衡 · 全球与主要产销国（万吨 / 同比 %）';
+  box.appendChild(st);
+  var PROD = [['全球总产量','B'],['东南亚合计','D'],['泰国','E'],['印尼','F'],['越南','G'],
+              ['科特迪瓦','C'],['中国','N'],['印度','O']];
+  var CONS = [['全球总消费量','R'],['中国','S'],['泰国','T'],['印度','U'],['欧盟','V'],['美国','W'],['其他国家','X']];
+  function num(v){
     if(v === null || v === undefined) return '—';
-    if(d) return Number(v).toFixed(d);
     return String(Math.round(Number(v)));
   }
   function pct(v){
@@ -2088,55 +2096,35 @@ function buildGbalWkTables(gd){
     var c = v > 0 ? '#d92626' : (v < 0 ? '#0a9a5c' : '#1f2733');
     return "<td style='color:" + c + "'>" + (v > 0 ? '+' : '') + Number(v).toFixed(1) + '%</td>';
   }
-  function tbl(html, cls){
-    var t = document.createElement('table'); t.className = 'data' + (cls ? ' ' + cls : '');
-    t.innerHTML = html; t.style.width = '100%';
-    var w = document.createElement('div'); w.className = 'tbl-scroll'; w.style.width = '100%';
-    w.appendChild(t);
-    return w;
-  }
-  /* ---- 表 1：全球年度平衡总表 ---- */
-  var s1 = document.createElement('div'); s1.className = 'section-title';
-  s1.textContent = '全球年度平衡总表（万吨 / 同比 %）';
-  box.appendChild(s1);
-  var h1 = "<thead><tr><th class='yr-col' rowspan='2'>年份</th>" +
-    "<th colspan='2'>全球总产量</th><th colspan='2'>全球总消费量</th>" +
-    "<th colspan='2'>供需平衡</th></tr><tr>" +
-    "<th>万吨</th><th>同比%</th><th>万吨</th><th>同比%</th><th>平衡</th><th>增量</th></tr></thead><tbody>";
-  gd.mainYears.map(String).forEach(function(y){
-    var m = gd.main[y] || {}, g = gd.growth[y] || {}, d = gd.delta[y] || {};
-    var dq = (d.Q === null || d.Q === undefined) ? '—' : ((d.Q > 0 ? '+' : '') + Math.round(d.Q));
-    h1 += "<tr><td class='yr-col'>" + y + '</td>' +
-      "<td class='hl'>" + num(m.B) + '</td>' + pct(g.B) +
-      "<td class='hl'>" + num(m.R) + '</td>' + pct(g.R) +
-      '<td>' + num(m.Q) + '</td>' +
-      '<td>' + dq + '</td></tr>';
+  var h = "<thead><tr><th class='yr-col' rowspan='2'>年份</th>" +
+    "<th colspan='" + PROD.length + "'>产量（万吨）</th>" +
+    "<th colspan='2'>供需平衡（万吨）</th>" +
+    "<th colspan='" + CONS.length + "'>消费量（万吨）</th>" +
+    "<th colspan='2'>全球同比 %</th></tr><tr>";
+  PROD.forEach(function(p){ h += "<th" + (p[1] === 'B' ? " class='hl'" : "") + ">" + p[0] + "</th>"; });
+  h += "<th>平衡</th><th>增量</th>";
+  CONS.forEach(function(p){ h += "<th" + (p[1] === 'R' ? " class='hl'" : "") + ">" + p[0] + "</th>"; });
+  h += "<th>产量</th><th>消费</th></tr></thead><tbody>";
+  gd.mainYears.forEach(function(y){
+    var ys = String(y);
+    var m = gd.main[ys] || {}, g = gd.growth[ys] || {}, d = gd.delta[ys] || {};
+    h += "<tr><td class='yr-col'>" + ys + "</td>";
+    PROD.forEach(function(p){
+      h += "<td" + (p[1] === 'B' ? " class='hl'" : "") + ">" + num(m[p[1]]) + "</td>";
+    });
+    h += "<td>" + num(m.Q) + "</td>";
+    h += "<td>" + ((d.Q === null || d.Q === undefined) ? '—' : ((d.Q > 0 ? '+' : '') + Math.round(Number(d.Q)))) + "</td>";
+    CONS.forEach(function(p){
+      h += "<td" + (p[1] === 'R' ? " class='hl'" : "") + ">" + num(m[p[1]]) + "</td>";
+    });
+    h += pct(g.B) + pct(g.R) + "</tr>";
   });
-  h1 += '</tbody>';
-  box.appendChild(tbl(h1));
-  /* ---- 表 2：主要产销国平衡 ---- */
-  var s2 = document.createElement('div'); s2.className = 'section-title';
-  s2.textContent = '主要产销国平衡（万吨）';
-  box.appendChild(s2);
-  var YRS = ['2024', '2025', '2026E', '2027E'];
-  var PROD = [['东南亚合计','D'],['泰国','E'],['印尼','F'],['越南','G'],['科特迪瓦','C'],['中国','N'],['印度','O'],['全球总产量','B']];
-  var CONS = [['中国','S'],['泰国','T'],['印度','U'],['欧盟','V'],['美国','W'],['其他国家','X'],['全球总消费量','R']];
-  var h2 = "<thead><tr><th class='yr-col' rowspan='" + PROD.length + "'>产量（万吨）</th>" +
-    YRS.map(function(y){ return '<th>' + y + '</th>'; }).join('') + '</tr></thead><tbody>';
-  PROD.forEach(function(p){
-    var hl = (p[0] === '全球总产量') ? ' class="hl"' : '';
-    h2 += '<tr><td class="yr-col">' + p[0] + '</td>' +
-      YRS.map(function(y){ var r = gd.main[y] || {}; return '<td' + hl + '>' + num(r[p[1]]) + '</td>'; }).join('') + '</tr>';
-  });
-  h2 += "<tr><td class='yr-col' rowspan='" + CONS.length + "'>消费（万吨）</td>" +
-    "<td colspan='4' style='background:#f8fafc'></td></tr>";
-  CONS.forEach(function(p){
-    var hl = (p[0] === '全球总消费量') ? ' class="hl"' : '';
-    h2 += '<tr><td class="yr-col">' + p[0] + '</td>' +
-      YRS.map(function(y){ var r = gd.main[y] || {}; return '<td' + hl + '>' + num(r[p[1]]) + '</td>'; }).join('') + '</tr>';
-  });
-  h2 += '</tbody>';
-  box.appendChild(tbl(h2));
+  h += '</tbody>';
+  var t = document.createElement('table'); t.className = 'data wk-gbal-tbl';
+  t.innerHTML = h; t.style.width = '100%';
+  var w = document.createElement('div'); w.className = 'tbl-scroll';
+  w.appendChild(t);
+  box.appendChild(w);
   return box;
 }
 
@@ -2382,7 +2370,7 @@ function buildWeeklyShell(root, toc){
       secEl.appendChild(ch0);
       /* 数据表另起一块（PDF 一块一页，表格不被压缩、图表不跨页） */
       var ch1 = document.createElement('div'); ch1.className = 'wk-chunk'; ch1.id = 'wk-ch-' + (++chunkSeq);
-      ch1.appendChild(buildGbalWkTables(gd));
+      ch1.appendChild(buildGbalWkTable(gd));
       secEl.appendChild(ch1);
     } else if(sec.custom === 'wx'){
       /* 天气按国家分行：3 张天气卡 + 行末 1 张产量/出口季节图，一行一块（PDF 一页一国家） */
