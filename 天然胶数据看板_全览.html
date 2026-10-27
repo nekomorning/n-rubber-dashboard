@@ -313,6 +313,12 @@ body{padding-bottom:40px;}
 .exp-daily-btn:disabled{opacity:.6;cursor:default;}
 .board-body{min-height:1px;}
 .board .section-title{margin-top:14px;}
+/* 轮胎进出口板块：半钢 / 全钢 两档分组标题（2026-10-27 新增，两档并列铺开） */
+.tire-seg{font-size:13.5px;font-weight:600;color:#0f4c81;margin:18px 0 4px;padding:5px 12px;
+  background:linear-gradient(90deg,#eef3fb,#ffffff 75%);border-left:4px solid #2b7cff;
+  border-radius:0 6px 6px 0;}
+.tire-seg b{font-weight:600;}
+.board .tire-seg + .board-body .section-title{margin-top:6px;}
 .board-ph{color:#a4acb9;font-size:12.5px;padding:26px 4px;}
 .board.is-lazy{min-height:520px;}
 /* 天气板块 ONI 摘要条 */
@@ -423,7 +429,7 @@ table.data td.hl{background:#eef3fa;}
 <body>
 <div class="hero">
   <h1>天然胶数据看板 · 全览</h1>
-  <div class="sub"><b>高频数据</b>（日度价格 / 天胶库存 / 下游轮胎 / 天气数据）· <b>贸易流</b>（天胶+轮胎折合计进出口 / 天然橡胶进出口 / 轮胎进出口 / 重卡）· <b>平衡表</b>（全球年度平衡 / ANRPC 平衡表 / 种面单产）· <b>核心逻辑</b>（研究框架 + 全球天胶 / 中国天胶 1–8 月累计表）· <b>周报</b>（周度小结 + 分板块解读 + 附录框架，右上角可导出 PDF），共 216 张图。左侧目录 hover 浮现、滚动自动高亮；数据板块保留独立年份筛选，标题下方标注数据截至日。</div>
+  <div class="sub"><b>高频数据</b>（日度价格 / 天胶库存 / 下游轮胎 / 天气数据）· <b>贸易流</b>（天胶+轮胎折合计进出口 / 天然橡胶进出口 / 轮胎进出口 / 重卡）· <b>平衡表</b>（全球年度平衡 / ANRPC 平衡表 / 种面单产）· <b>核心逻辑</b>（研究框架 + 全球天胶 / 中国天胶 1–8 月累计表）· <b>周报</b>（周度小结 + 分板块解读 + 附录框架，右上角可导出 PDF），共 241 张图。左侧目录 hover 浮现、滚动自动高亮；数据板块保留独立年份筛选，标题下方标注数据截至日。</div>
   <div class="note">图表懒加载：首次进入标签时建骨架，滚动到板块附近才初始化　|　高频数据板块标题栏「导出日报」可导出整份日报长图（PNG：日度价格 + 天胶库存 + 下游轮胎 + 天气·泰/科/越/中）</div>
 </div>
 <div class="toptabs">
@@ -783,7 +789,7 @@ function makeComboCard(ch,grid,row){
   var unitLabel=isExp?"出口量":"进口量";
   var totalLineName=(isExp?"四国合计":"六国合计")+" 同比";
   card.innerHTML=
-    '<div class="ttl ttlrow"><span>'+ch.title+'</span><span class="dt">'+lastYr+' 年度</span></div>'+
+    '<div class="ttl ttlrow"><span>'+tireLabel(ch.title)+'</span><span class="dt">'+lastYr+' 年度</span></div>'+
     '<div class="meta pctmode">'+
       '<span class="val">'+fmt(lastTotal, DEC)+'<span class="unit"> '+UNIT+'</span></span>'+
       '<span class="chg '+chgCls(lastYoy)+'">同比 '+yoyStr+'</span>'+
@@ -1540,7 +1546,7 @@ function renderChainPanel(){
 
 
 /* ================= 全览页调度 ================= */
-var BOARDS = [{"tab": "hf", "pid": "p1", "label": "日度价格", "sub": "盘面结构 / 原料及利润 / 现货价格价差", "kind": "std", "cnt": 48}, {"tab": "hf", "pid": "p2", "label": "天胶库存", "sub": "深色胶 · 浅色胶 · 仓单", "kind": "std", "cnt": 11}, {"tab": "hf", "pid": "p3", "label": "下游轮胎", "sub": "开工 · 产量 · 库存天数 · 利润", "kind": "std", "cnt": 10}, {"tab": "hf", "pid": "p4", "label": "天气数据", "sub": "14 个产区 · 30 天滚动降雨 / 均温 / 累计≥10mm 天数 + 16 天预报", "kind": "std", "cnt": 43}, {"tab": "trade", "pid": "chain", "label": "天胶+轮胎折合计进出口", "sub": "净流量 · 季节图 · 月度 / 年度 / 区间累计表（与贸易流页 chain 子页同源）", "kind": "chain", "cnt": 15}, {"tab": "trade", "pid": "p5", "label": "天然橡胶进出口", "sub": "出口量 · 进口量（月度季节图）", "kind": "std", "cnt": 14}, {"tab": "trade", "pid": "p6", "label": "轮胎进出口", "sub": "出口量 · 进口量 · 净进口量（月度季节图）", "kind": "std", "cnt": 25}, {"tab": "trade", "pid": "p7", "label": "重卡", "sub": "产量 / 批发 / 出口 / 内销 / 新能源 / 天然气", "kind": "std", "cnt": 8}, {"tab": "bal", "pid": "gbal", "label": "全球年度平衡", "sub": "年度绝对值 / 增速 / 增量 · 2008–2027E", "kind": "gbal", "cnt": 1}, {"tab": "bal", "pid": "p8", "label": "ANRPC 平衡表", "sub": "12 国 · 产量 / 消费量 / 产消平衡（月度季节图）", "kind": "p8", "cnt": 36}, {"tab": "bal", "pid": "plant", "label": "种面单产", "sub": "11 国 · 总面积 / 新增面积 / 割胶面积 / 开割率 / 亩产（年度）", "kind": "plant", "cnt": 5}];
+var BOARDS = [{"tab": "hf", "pid": "p1", "label": "日度价格", "sub": "盘面结构 / 原料及利润 / 现货价格价差", "kind": "std", "cnt": 48}, {"tab": "hf", "pid": "p2", "label": "天胶库存", "sub": "深色胶 · 浅色胶 · 仓单", "kind": "std", "cnt": 11}, {"tab": "hf", "pid": "p3", "label": "下游轮胎", "sub": "开工 · 产量 · 库存天数 · 利润", "kind": "std", "cnt": 10}, {"tab": "hf", "pid": "p4", "label": "天气数据", "sub": "14 个产区 · 30 天滚动降雨 / 均温 / 累计≥10mm 天数 + 16 天预报", "kind": "std", "cnt": 43}, {"tab": "trade", "pid": "chain", "label": "天胶+轮胎折合计进出口", "sub": "净流量 · 季节图 · 月度 / 年度 / 区间累计表（与贸易流页 chain 子页同源）", "kind": "chain", "cnt": 15}, {"tab": "trade", "pid": "p5", "label": "天然橡胶进出口", "sub": "出口量 · 进口量（月度季节图）", "kind": "std", "cnt": 14}, {"tab": "trade", "pid": "p6", "label": "轮胎进出口", "sub": "出口量 · 进口量 · 净进口量（月度季节图）", "kind": "std", "cnt": 50}, {"tab": "trade", "pid": "p7", "label": "重卡", "sub": "产量 / 批发 / 出口 / 内销 / 新能源 / 天然气", "kind": "std", "cnt": 8}, {"tab": "bal", "pid": "gbal", "label": "全球年度平衡", "sub": "年度绝对值 / 增速 / 增量 · 2008–2027E", "kind": "gbal", "cnt": 1}, {"tab": "bal", "pid": "p8", "label": "ANRPC 平衡表", "sub": "12 国 · 产量 / 消费量 / 产消平衡（月度季节图）", "kind": "p8", "cnt": 36}, {"tab": "bal", "pid": "plant", "label": "种面单产", "sub": "11 国 · 总面积 / 新增面积 / 割胶面积 / 开割率 / 亩产（年度）", "kind": "plant", "cnt": 5}];
 var TABS = [{"id": "hf", "label": "高频数据", "sub": "日度 / 周度频率"}, {"id": "trade", "label": "贸易流", "sub": "天胶+轮胎折合计 · 进出口 · 重卡"}, {"id": "bal", "label": "平衡表", "sub": "全球年度平衡 · ANRPC · 种面单产"}, {"id": "core", "label": "核心逻辑", "sub": "研究框架 · 全球天胶 · 中国天胶"}, {"id": "weekly", "label": "周报", "sub": "周度小结 · 分板块解读 · 附录研究框架"}];
 var BYID = {};
 BOARDS.forEach(function(b){ BYID['b-' + b.pid] = b; });
@@ -1686,9 +1692,33 @@ function renderBoard(bd){
         if(charts.length > cFrom) charts.length = cFrom;
       }
     }
-    var body = document.createElement('div'); body.className = 'board-body';
-    mk.appendChild(body);
-    buildSections(body);
+    /* 轮胎进出口（p6）：半钢 / 全钢两档并列铺开（2026-10-27 新增）
+       —— 全览页没有独立贸易流页那套「轮胎种类」切换条，若沿用模板默认的
+       乘用车胎（半钢）档，用户在贸易流标签下只能看到半钢图、全钢数据整块缺失。
+       此处改为两档各渲染一遍 buildSections：临时切换全局 tireType 后调用，
+       模板 makeCard / makeComboCard 会自动改从 D.tireType / D.comboByType 取对应档数据，
+       卡片标题由 tireLabel() 同步改写为「半钢胎 / 全钢胎」。 */
+    if(bd.pid === 'p6' && ds.tireType && ds.tireType['x_th']){
+      var segs = [['乘用车胎', '半钢轮胎（401110）', '#2b7cff'],
+                  ['卡客车胎', '全钢轮胎（401120）', '#8E44AD']];
+      var prevTT = tireType;
+      segs.forEach(function(sg, si){
+        tireType = sg[0];
+        var seg = document.createElement('div');
+        seg.className = 'tire-seg';
+        seg.style.borderLeftColor = sg[2];
+        seg.innerHTML = '<b>' + sg[1] + '</b>';
+        mk.appendChild(seg);
+        var bx = document.createElement('div'); bx.className = 'board-body';
+        mk.appendChild(bx);
+        buildSections(bx);
+      });
+      tireType = prevTT;
+    } else {
+      var body = document.createElement('div'); body.className = 'board-body';
+      mk.appendChild(body);
+      buildSections(body);
+    }
   } else if(bd.kind === 'gbal'){
     renderGbal(bd, ds, mk);
   } else if(bd.kind === 'p8'){

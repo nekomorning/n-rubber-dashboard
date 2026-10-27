@@ -1945,7 +1945,7 @@ function makeComboCard(ch,grid,row){
   var unitLabel=isExp?"出口量":"进口量";
   var totalLineName=(isExp?"四国合计":"六国合计")+" 同比";
   card.innerHTML=
-    '<div class="ttl ttlrow"><span>'+ch.title+'</span><span class="dt">'+lastYr+' 年度</span></div>'+
+    '<div class="ttl ttlrow"><span>'+tireLabel(ch.title)+'</span><span class="dt">'+lastYr+' 年度</span></div>'+
     '<div class="meta pctmode">'+
       '<span class="val">'+fmt(lastTotal, DEC)+'<span class="unit"> '+UNIT+'</span></span>'+
       '<span class="chg '+chgCls(lastYoy)+'">同比 '+yoyStr+'</span>'+
