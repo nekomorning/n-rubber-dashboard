@@ -382,8 +382,11 @@ table.data td.hl{background:#eef3fa;}
 .wk-kpi .k-val small{font-size:11.5px;font-weight:400;color:#8a93a3;margin-left:3px;}
 .wk-kpi .k-chg{font-size:11.5px;margin-top:3px;}
 .wk-kpi .up{color:#d92626;} .wk-kpi .down{color:#0a9a5c;} .wk-kpi .flat{color:#8a93a3;}
-.wr-lead p{margin:0 0 7px;font-size:13px;line-height:1.9;color:#3a4553;}
+/* 顶部文字分析段（lead）：与「本周数据与消息面」一致加圆点项目符号（2026-10-27 用户定） */
+.wr-lead p{margin:0 0 7px;font-size:13px;line-height:1.9;color:#3a4553;
+  padding-left:15px;text-indent:-15px;}
 .wr-lead p:last-child{margin-bottom:0;}
+.wr-lead .wr-dot{color:#2b7cff;font-weight:700;margin-right:5px;}
 .wr-lead b{color:#0f4c81;}
 .wr-note{background:#fff;border:1px solid #e5e9f0;border-left:4px solid #2b7cff;border-radius:10px;
   padding:12px 16px;margin:0 0 14px;font-size:13px;line-height:1.9;color:#3a4553;}
@@ -2107,7 +2110,7 @@ function buildWeeklyShell(root, toc){
       '　|　价格、库存、开工、进出口与天气均取自本页各标签同源底稿</div>' +
     (W.asof ? '<div class="wr-dt-src">分项截至：' + W.asof + '</div>' : '') +
     '<div class="wr-kpis">' + (W.kpis || '') + '</div>' +
-    '<div class="wr-lead">' + (W.lead || []).map(function(p){ return '<p>' + p + '</p>'; }).join('') + '</div>' +
+    '<div class="wr-lead">' + (W.lead || []).map(function(p){ return '<p><span class="wr-dot">•</span>' + p + '</p>'; }).join('') + '</div>' +
     '<button class="exp-weekly-btn" id="wkExpBtn" type="button">导出周报 PDF</button>';
   el.appendChild(hero);
 
